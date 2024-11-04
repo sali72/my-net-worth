@@ -15,23 +15,20 @@ class UserCRUD:
         return list(User.objects)
 
     async def get_one_by_username(self, username: str) -> User:
-        return User.objects(username=username).first()
+        return User.objects.get(username=username)
+        
 
     async def get_one_by_username_optional(self, username: str) -> User:
         return User.objects(username=username).first()
 
     async def get_one_by_id(self, user_id: str) -> User:
-        return User.objects(user_id=user_id).first()
+        return User.objects.get(user_id=user_id)
 
-    async def update_one(self, user_id: str, user: User) -> int:
-        user = User.objects(user_id=user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        user.update(user)
+    async def update_one(self, username: str, updated_user: User) -> int:
+        user = await self.get_one_by_username(username=username)
+        user.update(updated_user)
         return user.save()
 
-    async def delete_one(self, user_id: str) -> int:
-        user = User.objects(user_id=user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+    async def delete_one(self, username: str) -> int:
+        user = await self.get_one_by_username(username=username)
         return user.delete()

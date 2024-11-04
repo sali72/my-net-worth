@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from mongoengine.errors import DoesNotExist
 
 from app.api.endpoints.authentication_routes import router as auth_routes
+from commons.mongoengine_exception_handlers import does_not_exist_handler
 from database.database import connect_to_db
 
 
@@ -19,3 +21,5 @@ app = FastAPI(
 )
 
 app.include_router(auth_routes)
+
+app.add_exception_handler(DoesNotExist, does_not_exist_handler)

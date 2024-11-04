@@ -12,6 +12,10 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="My-net-worth app API",
+    description="This app is a personal financial app that helps you manage your money better",
+    lifespan=lifespan,
+)
 
 app.include_router(auth_routes)

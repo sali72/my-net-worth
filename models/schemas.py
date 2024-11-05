@@ -32,7 +32,6 @@ class UserSchema(BaseModel):
 
 class WalletSchema(BaseModel):
     name: str = Field(None, example="Savings Wallet")
-    currency_code: str = Field(None, example="USD")
     balance: float = Field(None, example=100.50)
     type: str = Field(..., choices=["fiat", "crypto"], example="fiat")
     currency_codes: List[str] = Field(..., example=["USD", "EUR"])

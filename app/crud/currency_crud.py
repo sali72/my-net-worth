@@ -1,6 +1,6 @@
 from models.models import Currency
 from typing import List
-from mongoengine.queryset import QuerySet
+from mongoengine import DoesNotExist
 
 
 class CurrencyCRUD:
@@ -9,7 +9,24 @@ class CurrencyCRUD:
         currency.save()
         return currency
 
-    async def find_by_currency_codes(
+    async def find_by_currency_codes_optional(
+        self,
         currency_codes_list: List[str],
-    ) -> QuerySet[Currency]:
+    ) -> List[Currency]:
         return Currency.objects(code__in=currency_codes_list)
+
+    async def find_by_currency_codes(
+        self, currency_codes_list: List[str]
+    ) -> List[Currency]:
+        currencies = await self.find_by_currency_codes_optional(currency_codes_list)
+        
+        if not currencies:
+            raise DoesNotExist(f"No currencies found for codes: {currency_codes_list}")
+
+        if len(currencies) != len(currency_codes_list):
+            missing_codes = set(currency_codes_list) - set(
+                currency.code for currency in currencies
+            )
+            raise DoesNotExist(f"Missing currencies for codes: {missing_codes}")
+
+        return list(currencies)

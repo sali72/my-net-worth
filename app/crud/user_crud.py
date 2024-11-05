@@ -1,11 +1,7 @@
-from fastapi import HTTPException
-
 from models.models import User
 
-class UserCRUD:
 
-    def __init__(self) -> None:
-        pass
+class UserCRUD:
 
     async def create_one(self, user: User) -> User:
         user.save()
@@ -16,7 +12,6 @@ class UserCRUD:
 
     async def get_one_by_username(self, username: str) -> User:
         return User.objects.get(username=username)
-        
 
     async def get_one_by_username_optional(self, username: str) -> User:
         return User.objects(username=username).first()

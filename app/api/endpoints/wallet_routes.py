@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Path
-from models.schemas import ResponseSchema, WalletSchema
+from models.schemas import ResponseSchema, WalletCreateSchema, WalletUpdateSchema
 from models.schemas import Role as R
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.wallet_controller import WalletController
@@ -9,7 +9,7 @@ router = APIRouter(prefix="/wallets", tags=["Wallet"])
 
 @router.post("", response_model=ResponseSchema)
 async def create_wallet_route(
-    wallet_schema: WalletSchema, user=Depends(has_role(R.USER))
+    wallet_schema: WalletCreateSchema, user=Depends(has_role(R.USER))
 ):
     wallet_id = await WalletController.create_wallet(wallet_schema, user)
     message = "Wallet created successfully"
@@ -38,7 +38,7 @@ async def read_all_wallets_route(user=Depends(has_role(R.USER))):
 
 @router.put("/{wallet_id}", response_model=ResponseSchema)
 async def update_wallet_route(
-    wallet_schema: WalletSchema,
+    wallet_schema: WalletUpdateSchema,
     wallet_id: str = Path(..., description="The ID of the wallet to update"),
     user=Depends(has_role(R.USER)),
 ):

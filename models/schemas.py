@@ -30,11 +30,29 @@ class UserSchema(BaseModel):
     password: str = Field(None, example="strongpassword123")
 
 
-class WalletSchema(BaseModel):
-    name: str = Field(None, example="Savings Wallet")
-    balance: float = Field(None, example=100.50)
+class CurrencyBalanceSchema(BaseModel):
+    currency_id: str = Field(..., example="currency_id_123")
+    balance: float = Field(..., example=100.50)
+
+
+class WalletCreateSchema(BaseModel):
+    name: str = Field(..., example="Savings Wallet")
     type: str = Field(..., choices=["fiat", "crypto"], example="fiat")
-    currency_codes: List[str] = Field(..., example=["USD", "EUR"])
+    currency_balances: List[CurrencyBalanceSchema] = Field(
+        ...,
+        example=[
+            {"currency_id": "currency_id_123", "balance": 100.50},
+            {"currency_id": "currency_id_456", "balance": 200.75},
+        ],
+    )
+
+
+class WalletUpdateSchema(BaseModel):
+    name: Optional[str] = Field(None, example="Savings Wallet")
+    type: Optional[str] = Field(None, choices=["fiat", "crypto"], example="fiat")
+    currency_balances: Optional[List[CurrencyBalanceSchema]] = Field(
+        None, example=[{"currency_id": "currency_id_123", "balance": 150.00}]
+    )
 
 
 class CurrencySchema(BaseModel):

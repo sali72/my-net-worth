@@ -10,6 +10,8 @@ from mongoengine import (
     StringField,
     ValidationError,
     EmailField,
+    EmbeddedDocument,
+    EmbeddedDocumentField,
 )
 
 
@@ -59,11 +61,16 @@ class Currency(BaseDocument):
         return super(Currency, self).save(*args, **kwargs)
 
 
+class CurrencyBalance(EmbeddedDocument):
+    currency_id = ReferenceField("Currency", required=True)
+    balance = DecimalField(min_value=0, required=True)
+
+
 class Wallet(BaseDocument):
     user_id = ReferenceField("User", required=True)
     name = StringField(unique=True, required=True, max_length=50)
     type = StringField(required=True, choices=["fiat", "crypto"])
-    currency_ids = ListField(ReferenceField("Currency"), required=True)
+    currency_balances = ListField(EmbeddedDocumentField(CurrencyBalance), required=True)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
 

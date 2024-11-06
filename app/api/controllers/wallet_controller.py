@@ -33,7 +33,7 @@ class WalletController:
     @classmethod
     async def get_wallet(cls, wallet_id: str, user_id: str) -> Wallet:
         wallet = await cls.wallet_crud.get_one_by_user(wallet_id, user_id)
-        return wallet
+        return wallet.to_dict()
 
     @classmethod
     async def get_all_wallets(cls, user_id: str) -> List[dict]:

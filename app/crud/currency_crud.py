@@ -19,7 +19,7 @@ class CurrencyCRUD:
         self, currency_codes_list: List[str]
     ) -> List[Currency]:
         currencies = await self.find_by_currency_codes_optional(currency_codes_list)
-        
+
         if not currencies:
             raise DoesNotExist(f"No currencies found for codes: {currency_codes_list}")
 

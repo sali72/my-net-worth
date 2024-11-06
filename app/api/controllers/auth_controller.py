@@ -45,12 +45,10 @@ class AuthController:
 
     @classmethod
     async def register_user(cls, user_schema: UserSchema):
-        print("type: ", type(user_schema))
         # await cls.__check_password_strength(user_schema.password, user_schema.username)
         hashed_password = cls.pwd_context.hash(user_schema.password)
 
         user_model = cls.__create_user_model(user_schema, hashed_password)
-        print("type: ", type(user_model))
         await cls.user_crud.create_one(user_model)
 
         return await cls.login_user(user_schema.username, user_schema.password)

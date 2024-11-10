@@ -1,23 +1,24 @@
-from app.crud.wallet_crud import WalletCRUD
-from app.crud.currency_crud import CurrencyCRUD
-from models.models import Wallet, User, CurrencyBalance
-from models.schemas import WalletCreateSchema, CurrencyBalanceSchema
 from typing import List
+
+from app.crud.currency_crud import CurrencyCRUD
+from app.crud.wallet_crud import WalletCRUD
+from models.models import CurrencyBalance, User, Wallet
+from models.schemas import CurrencyBalanceSchema, WalletCreateSchema, WalletUpdateSchema
 
 
 class WalletController:
 
     @classmethod
     async def create_wallet(cls, wallet_schema: WalletCreateSchema, user: User) -> str:
-        wallet = await cls.__create_wallet_object(wallet_schema, user.id)
+        wallet = await cls.__create_wallet_obj_to_create(wallet_schema, user.id)
         wallet_in_db: Wallet = await WalletCRUD.create_one(wallet)
         return wallet_in_db.to_dict()
 
     @classmethod
-    async def __create_wallet_object(
+    async def __create_wallet_obj_to_create(
         cls, wallet_schema: WalletCreateSchema, user_id
     ) -> Wallet:
-        currency_balances = await cls.__create_currency_balance_objects_list(
+        currency_balances = await cls.__create_currency_balance_objs_list(
             wallet_schema.currency_balances
         )
         return Wallet(
@@ -28,13 +29,13 @@ class WalletController:
         )
 
     @classmethod
-    async def __create_currency_balance_objects_list(
+    async def __create_currency_balance_objs_list(
         cls, currency_balances_in_schema: List[CurrencyBalanceSchema]
     ) -> List[CurrencyBalance]:
         currency_balances = []
         for cb in currency_balances_in_schema:
             await cls.__validate_currency(cb)
-            
+
             currency_balance = CurrencyBalance(
                 currency_id=cb.currency_id, balance=cb.balance
             )
@@ -52,26 +53,34 @@ class WalletController:
 
     @classmethod
     async def get_all_wallets(cls, user_id: str) -> List[dict]:
-        wallets: List[Wallet] = await WalletCRUD.get_all_by_user_id_optional(
-            user_id
-        )
+        wallets: List[Wallet] = await WalletCRUD.get_all_by_user_id_optional(user_id)
         wallets_list = [wallet.to_dict() for wallet in wallets]
         return wallets_list
 
     @classmethod
     async def update_wallet(
-        cls, wallet_id: str, wallet_schema: WalletCreateSchema, user_id: str
+        cls, wallet_id: str, wallet_update_schema: WalletUpdateSchema, user_id: str
     ) -> Wallet:
-        updated_wallet = cls.__create_wallet_for_update(wallet_schema)
+        updated_wallet = await cls.__create_wallet_obj_for_update(wallet_update_schema)
         await WalletCRUD.update_one_by_user(user_id, wallet_id, updated_wallet)
-        return await WalletCRUD.get_one_by_user(wallet_id)
+        wallet_from_db = await WalletCRUD.get_one_by_id(wallet_id)
+        return wallet_from_db.to_dict()
 
     @classmethod
-    def __create_wallet_for_update(cls, wallet_schema) -> Wallet:
+    async def __create_wallet_obj_for_update(
+        cls, wallet_schema: WalletUpdateSchema
+    ) -> Wallet:
+        if wallet_schema.currency_balances:
+            currency_balances = await cls.__create_currency_balance_objs_list(
+                wallet_schema.currency_balances
+            )
+        else:
+            currency_balances = None
+
         updated_wallet = Wallet(
             name=wallet_schema.name,
             type=wallet_schema.type,
-            currency_ids=wallet_schema.currency_codes,
+            currency_balances=currency_balances,
         )
         return updated_wallet
 

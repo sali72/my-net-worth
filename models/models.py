@@ -12,6 +12,7 @@ from mongoengine import (
     EmailField,
     EmbeddedDocument,
     EmbeddedDocumentField,
+    LazyReferenceField
 )
 
 
@@ -62,7 +63,7 @@ class Currency(BaseDocument):
 
 
 class CurrencyBalance(EmbeddedDocument):
-    currency_id = ReferenceField("Currency", required=True)
+    currency_id = LazyReferenceField("Currency", required=True)
     balance = DecimalField(min_value=0, required=True)
 
 

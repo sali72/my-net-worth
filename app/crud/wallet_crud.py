@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from mongoengine import DoesNotExist, QuerySet
+
 from models.models import Wallet
 
 
@@ -35,15 +38,33 @@ class WalletCRUD:
     async def update_one_by_user(
         cls, user_id: str, wallet_id: str, updated_wallet: Wallet
     ):
-        result = Wallet.objects(id=wallet_id, user_id=user_id).update_one(
-            set__name=updated_wallet.name,
-            set__type=updated_wallet.type,
-            set__currency_ids=updated_wallet.currency_ids,
-        )
-        if result == 0:
-            raise DoesNotExist(
-                f"Wallet with id {wallet_id} for user {user_id} does not exist or update failed"
-            )
+        wallet = await cls.get_one_by_user(wallet_id, user_id)
+        cls.__update_wallet_fields(wallet, updated_wallet)
+        cls.__update_currency_balances(wallet, updated_wallet)
+        cls.__update_timestamp(wallet)
+        wallet.save()
+
+    @staticmethod
+    def __update_wallet_fields(wallet: Wallet, updated_wallet: Wallet):
+        if updated_wallet.name is not None:
+            wallet.name = updated_wallet.name
+        if updated_wallet.type is not None:
+            wallet.type = updated_wallet.type
+
+    @staticmethod
+    def __update_currency_balances(wallet: Wallet, updated_wallet: Wallet):
+        if updated_wallet.currency_balances is not None:
+            for updated_balance in updated_wallet.currency_balances:
+                for existing_balance in wallet.currency_balances:
+                    if (
+                        existing_balance.currency_id.pk
+                        == updated_balance.currency_id.pk
+                    ):
+                        existing_balance.balance = updated_balance.balance
+
+    @staticmethod
+    def __update_timestamp(wallet: Wallet):
+        wallet.updated_at = datetime.utcnow()
 
     @classmethod
     async def delete_one_by_user(cls, user_id: str, wallet_id: str) -> bool:

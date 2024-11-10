@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from fastapi import HTTPException, status
 from mongoengine import DoesNotExist, QuerySet
 
 from models.models import Wallet
@@ -61,6 +61,11 @@ class WalletCRUD:
                         == updated_balance.currency_id.pk
                     ):
                         existing_balance.balance = updated_balance.balance
+                    else:
+                        raise HTTPException(
+                            status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Currency id is not related to this user",
+                        )
 
     @staticmethod
     def __update_timestamp(wallet: Wallet):

@@ -18,11 +18,13 @@ class BaseModelConfigured(BaseModel):
 
 
 class ResponseSchema(BaseModelConfigured):
-    message: str = Field(None, example=" task done successfully ")
-    status: str = Field("success", example="success")
+    message: str = Field(None, example="Task was done successfully ")
     data: dict = Field(None, example={"data": "Your requested data"})
     timestamp: datetime = Field(datetime.now(), example="2024-02-16T14:05:09.252968")
 
+class ErrorResponseModel(BaseModelConfigured):
+    exception_name: str = Field(None, example="ExceptionName")
+    detail: str = Field(None, example="There was a problem serving your request ")
 
 class UserSchema(BaseModel):
     username: str = Field(None, example="johndoe")

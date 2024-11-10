@@ -38,7 +38,7 @@ class BaseDocument(Document):
 class User(BaseDocument):
     name = StringField(required=False, max_length=50)
     username = StringField(required=True, unique=True)
-    # email = EmailField(required=True, unique=True)
+    # email = EmailField(required=True, unique=True) #TODO uncomment it
     email = StringField(required=True, unique=True)
     hashed_password = StringField(required=True)
     role = StringField(required=True, choices=["user", "admin"])
@@ -46,19 +46,27 @@ class User(BaseDocument):
     updated_at = DateTimeField(default=datetime.utcnow)
 
 
+
 class Currency(BaseDocument):
-    currency_id = StringField(primary_key=True)
+    user_id = ReferenceField("User", required=True)
     code = StringField(required=True, max_length=3, unique=True)
     name = StringField(required=True, max_length=50)
     symbol = StringField(required=True, max_length=5)
     is_predefined = BooleanField(default=False)
     is_base_currency = BooleanField(default=False)
     currency_type = StringField(required=True, choices=["fiat", "crypto"])
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
 
     def save(self, *args, **kwargs):
         if self.is_base_currency:
-            if Currency.objects(is_base_currency=True).count() > 0:
-                raise ValidationError("Only one currency can be the base currency.")
+            # Check if there is already a base currency for this user
+            existing_base_currency = Currency.objects(
+                user_id=self.user_id, is_base_currency=True
+            ).first()
+            if existing_base_currency and existing_base_currency.id != self.id:
+                raise ValidationError("Only one currency can be the base currency for each user.")
+        
         return super(Currency, self).save(*args, **kwargs)
 
 

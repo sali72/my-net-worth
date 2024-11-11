@@ -22,9 +22,11 @@ class ResponseSchema(BaseModelConfigured):
     data: dict = Field(None, example={"data": "Your requested data"})
     timestamp: datetime = Field(datetime.now(), example="2024-02-16T14:05:09.252968")
 
+
 class ErrorResponseModel(BaseModelConfigured):
     exception_name: str = Field(None, example="ExceptionName")
     detail: str = Field(None, example="There was a problem serving your request ")
+
 
 class UserSchema(BaseModel):
     username: str = Field(None, example="johndoe")
@@ -72,14 +74,27 @@ class CurrencyExchangeSchema(BaseModel):
     rate: float = Field(None, example=0.85)
 
 
-class TransactionSchema(BaseModel):
-    wallet_name: str = Field(None, example="Savings Wallet")
-    category_name: str = Field(None, example="Groceries")
-    type: str = Field(
+class TransactionCreateSchema(BaseModel):
+    wallet_id: str = Field(..., example="60d21b4667d0d8992e610c85")
+    category_id: str = Field(..., example="60d21b4967d0d8992e610c86")
+    type: str = Field(..., choices=["income", "expense", "transfer"], example="expense")
+    amount: float = Field(..., example=50.75)
+    date: Optional[datetime] = Field(
+        default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
+    )
+    description: Optional[str] = Field(
+        None, max_length=255, example="Weekly grocery shopping"
+    )
+
+
+class TransactionUpdateSchema(BaseModel):
+    wallet_id: Optional[str] = Field(None, example="60d21b4667d0d8992e610c85")
+    category_id: Optional[str] = Field(None, example="60d21b4967d0d8992e610c86")
+    type: Optional[str] = Field(
         None, choices=["income", "expense", "transfer"], example="expense"
     )
-    amount: float = Field(None, example=50.75)
-    date: Optional[datetime] = Field(datetime.utcnow())
+    amount: Optional[float] = Field(None, example=50.75)
+    date: Optional[datetime] = Field(None, example="2023-10-15T14:30:00Z")
     description: Optional[str] = Field(
         None, max_length=255, example="Weekly grocery shopping"
     )

@@ -4,7 +4,6 @@ from mongoengine import DoesNotExist
 from bson import ObjectId
 
 
-
 class CurrencyCRUD:
 
     @classmethod
@@ -61,3 +60,7 @@ class CurrencyCRUD:
             raise DoesNotExist(f"Missing currencies for IDs: {missing_ids}")
 
         return list(currencies)
+
+    @classmethod
+    async def get_base_currency(cls, user_id: str) -> Currency:
+        return Currency.objects.get(user_id=user_id, is_base_currency=True)

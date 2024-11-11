@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, Path
 from models.schemas import (
     ResponseSchema,
     WalletCreateSchema,
@@ -26,6 +26,15 @@ async def create_wallet_route(
     message = "Wallet created successfully"
     data = {"id": wallet_id}
     return ResponseSchema(data=data, message=message)
+
+
+@router.get("/total-value", response_model=ResponseSchema)
+async def calculate_total_wallet_value_route(user=Depends(has_role(R.USER))):
+    total_value = await WalletController.calculate_total_wallet_value(user.id)
+    return ResponseSchema(
+        data={"total_value": total_value},
+        message="Total wallet value calculated successfully",
+    )
 
 
 @router.get("/{wallet_id}", response_model=ResponseSchema)

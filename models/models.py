@@ -129,6 +129,7 @@ class Transaction(BaseDocument):
     from_wallet_id = ReferenceField(Wallet, required=False)
     to_wallet_id = ReferenceField(Wallet, required=False)
     category_id = ReferenceField("Category", required=True)
+    currency_id = ReferenceField("Currency", required=True)  # Add currency_id
     type = StringField(required=True, choices=["income", "expense", "transfer"])
     amount = DecimalField(required=True, precision=2)
     date = DateTimeField(default=datetime.utcnow)
@@ -155,10 +156,14 @@ class Transaction(BaseDocument):
     def _validate_expense(self):
         if not self.from_wallet_id:
             raise ValidationError("from_wallet_id is required for expenses.")
+        if self.to_wallet_id:
+            raise ValidationError("to_wallet_id should not be provided for expenses.")
 
     def _validate_income(self):
         if not self.to_wallet_id:
             raise ValidationError("to_wallet_id is required for incomes.")
+        if self.from_wallet_id:
+            raise ValidationError("from_wallet_id should not be provided for incomes.")
 
 
 class Category(BaseDocument):

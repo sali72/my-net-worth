@@ -113,9 +113,14 @@ class CurrencyExchange(BaseDocument):
     to_currency_id = ReferenceField(Currency, required=True)
     rate = DecimalField(required=True)
     date = DateTimeField(default=datetime.utcnow)
-    # make sure from and to currencies are unique together
+    # make sure "user_id", "from_currency_id" and "to_currency_id" are unique together
     meta = {
-        "indexes": [{"fields": ("from_currency_id", "to_currency_id"), "unique": True}]
+        "indexes": [
+            {
+                "fields": ("user_id", "from_currency_id", "to_currency_id"),
+                "unique": True,
+            }
+        ]
     }
 
 

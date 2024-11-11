@@ -12,7 +12,7 @@ from mongoengine import (
     EmailField,
     EmbeddedDocument,
     EmbeddedDocumentField,
-    LazyReferenceField
+    LazyReferenceField,
 )
 
 
@@ -46,7 +46,6 @@ class User(BaseDocument):
     updated_at = DateTimeField(default=datetime.utcnow)
 
 
-
 class Currency(BaseDocument):
     user_id = ReferenceField("User", required=True)
     code = StringField(required=True, max_length=3, unique=True)
@@ -65,8 +64,10 @@ class Currency(BaseDocument):
                 user_id=self.user_id, is_base_currency=True
             ).first()
             if existing_base_currency and existing_base_currency.id != self.id:
-                raise ValidationError("Only one currency can be the base currency for each user.")
-        
+                raise ValidationError(
+                    "Only one currency can be the base currency for each user."
+                )
+
         return super(Currency, self).save(*args, **kwargs)
 
 
@@ -85,10 +86,17 @@ class Wallet(BaseDocument):
 
 
 class CurrencyExchange(BaseDocument):
+    user_id = ReferenceField("User", required=True)
     from_currency_id = ReferenceField(Currency, required=True)
     to_currency_id = ReferenceField(Currency, required=True)
     rate = DecimalField(required=True)
     date = DateTimeField(default=datetime.utcnow)
+    # make sure from and to currencies are unique together
+    meta = {
+        'indexes': [
+            {'fields': ('from_currency_id', 'to_currency_id'), 'unique': True}
+        ]
+    }
 
 
 class Transaction(BaseDocument):

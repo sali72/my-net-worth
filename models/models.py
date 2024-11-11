@@ -23,16 +23,38 @@ class BaseDocument(Document):
         # Convert the document to a dictionary
         doc_dict = self.to_mongo().to_dict()
 
-        # Convert ObjectId fields to strings
+        # Process each key-value pair in the dictionary
         for key, value in doc_dict.items():
-            if isinstance(value, ObjectId):
-                doc_dict[key] = str(value)
-            elif isinstance(value, list) and all(
-                isinstance(item, ObjectId) for item in value
-            ):
-                doc_dict[key] = [str(item) for item in value]
+            doc_dict[key] = self._convert_value(value)
 
         return doc_dict
+
+    def _convert_value(self, value):
+        """Convert ObjectId or list of ObjectIds/dicts to strings."""
+        if isinstance(value, ObjectId):
+            return self._convert_objectid_to_str(value)
+        elif isinstance(value, list):
+            return self._convert_list(value)
+        return value
+
+    def _convert_objectid_to_str(self, object_id):
+        """Convert an ObjectId to a string."""
+        return str(object_id)
+
+    def _convert_list(self, value_list):
+        """Convert a list of ObjectIds or dicts with ObjectIds to strings."""
+        if all(isinstance(item, ObjectId) for item in value_list):
+            return [self._convert_objectid_to_str(item) for item in value_list]
+        elif all(isinstance(item, dict) for item in value_list):
+            return [self._convert_dict(item) for item in value_list]
+        return value_list
+
+    def _convert_dict(self, value_dict):
+        """Convert ObjectId values in a dictionary to strings."""
+        for sub_key, sub_value in value_dict.items():
+            if isinstance(sub_value, ObjectId):
+                value_dict[sub_key] = self._convert_objectid_to_str(sub_value)
+        return value_dict
 
 
 class User(BaseDocument):
@@ -93,9 +115,7 @@ class CurrencyExchange(BaseDocument):
     date = DateTimeField(default=datetime.utcnow)
     # make sure from and to currencies are unique together
     meta = {
-        'indexes': [
-            {'fields': ('from_currency_id', 'to_currency_id'), 'unique': True}
-        ]
+        "indexes": [{"fields": ("from_currency_id", "to_currency_id"), "unique": True}]
     }
 
 

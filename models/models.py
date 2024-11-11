@@ -126,12 +126,39 @@ class CurrencyExchange(BaseDocument):
 
 class Transaction(BaseDocument):
     user_id = ReferenceField(User, required=True)
-    wallet_id = ReferenceField(Wallet, required=True)
+    from_wallet_id = ReferenceField(Wallet, required=False)
+    to_wallet_id = ReferenceField(Wallet, required=False)
     category_id = ReferenceField("Category", required=True)
     type = StringField(required=True, choices=["income", "expense", "transfer"])
     amount = DecimalField(required=True, precision=2)
     date = DateTimeField(default=datetime.utcnow)
     description = StringField(max_length=255)
+
+    def clean(self):
+        if self.type == "transfer":
+            self._validate_transfer()
+        elif self.type == "expense":
+            self._validate_expense()
+        elif self.type == "income":
+            self._validate_income()
+
+    def _validate_transfer(self):
+        if not self.from_wallet_id or not self.to_wallet_id:
+            raise ValidationError(
+                "Both from_wallet_id and to_wallet_id are required for transfers."
+            )
+        if self.from_wallet_id == self.to_wallet_id:
+            raise ValidationError(
+                "from_wallet_id and to_wallet_id cannot be the same for transfers."
+            )
+
+    def _validate_expense(self):
+        if not self.from_wallet_id:
+            raise ValidationError("from_wallet_id is required for expenses.")
+
+    def _validate_income(self):
+        if not self.to_wallet_id:
+            raise ValidationError("to_wallet_id is required for incomes.")
 
 
 class Category(BaseDocument):

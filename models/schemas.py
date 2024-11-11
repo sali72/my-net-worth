@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, Extra, Field, model_validator
 from typing import Optional, List
 
 
@@ -74,30 +74,71 @@ class CurrencyExchangeSchema(BaseModel):
     rate: float = Field(None, example=0.85)
 
 
-class TransactionCreateSchema(BaseModel):
-    wallet_id: str = Field(..., example="60d21b4667d0d8992e610c85")
-    category_id: str = Field(..., example="60d21b4967d0d8992e610c86")
-    type: str = Field(..., choices=["income", "expense", "transfer"], example="expense")
-    amount: float = Field(..., example=50.75)
-    date: Optional[datetime] = Field(
-        default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
-    )
-    description: Optional[str] = Field(
-        None, max_length=255, example="Weekly grocery shopping"
-    )
-
-
-class TransactionUpdateSchema(BaseModel):
-    wallet_id: Optional[str] = Field(None, example="60d21b4667d0d8992e610c85")
-    category_id: Optional[str] = Field(None, example="60d21b4967d0d8992e610c86")
+class TransactionBaseSchema(BaseModel):
+    from_wallet_id: Optional[str] = Field(None, example="60d21b4667d0d8992e610c85")
+    to_wallet_id: Optional[str] = Field(None, example="60d21b4967d0d8992e610c86")
+    category_id: Optional[str] = Field(None, example="60d21b4967d0d8992e610c87")
     type: Optional[str] = Field(
-        None, choices=["income", "expense", "transfer"], example="expense"
+        None, choices=["income", "expense", "transfer"], example="transfer"
     )
     amount: Optional[float] = Field(None, example=50.75)
     date: Optional[datetime] = Field(None, example="2023-10-15T14:30:00Z")
     description: Optional[str] = Field(
-        None, max_length=255, example="Weekly grocery shopping"
+        None, max_length=255, example="Transfer to savings"
     )
+
+    @model_validator(mode="after")
+    def validate_transaction(cls, values):
+        transaction_type = values.type
+        from_wallet_id = values.from_wallet_id
+        to_wallet_id = values.to_wallet_id
+
+        if transaction_type == "transfer":
+            cls._validate_transfer_wallets(from_wallet_id, to_wallet_id)
+        elif transaction_type == "expense":
+            cls._validate_expense_wallet(from_wallet_id)
+        elif transaction_type == "income":
+            cls._validate_income_wallet(to_wallet_id)
+
+        return values
+
+    @staticmethod
+    def _validate_transfer_wallets(
+        from_wallet_id: Optional[str], to_wallet_id: Optional[str]
+    ):
+        if not from_wallet_id or not to_wallet_id:
+            raise ValueError(
+                "Both from_wallet_id and to_wallet_id are required for transfers."
+            )
+        if from_wallet_id == to_wallet_id:
+            raise ValueError(
+                "from_wallet_id and to_wallet_id cannot be the same for transfers."
+            )
+
+    @staticmethod
+    def _validate_expense_wallet(from_wallet_id: Optional[str]):
+        if not from_wallet_id:
+            raise ValueError("from_wallet_id is required for expenses.")
+
+    @staticmethod
+    def _validate_income_wallet(to_wallet_id: Optional[str]):
+        if not to_wallet_id:
+            raise ValueError("to_wallet_id is required for incomes.")
+
+
+class TransactionCreateSchema(TransactionBaseSchema):
+    category_id: str = Field(..., example="60d21b4967d0d8992e610c87")
+    type: str = Field(
+        ..., choices=["income", "expense", "transfer"], example="transfer"
+    )
+    amount: float = Field(..., example=50.75)
+    date: Optional[datetime] = Field(
+        default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
+    )
+
+
+class TransactionUpdateSchema(TransactionBaseSchema):
+    pass
 
 
 class CategorySchema(BaseModel):

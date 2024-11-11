@@ -135,20 +135,22 @@ class Transaction(BaseDocument):
 
 
 class Category(BaseDocument):
+    user_id = ReferenceField(User, required=True)
     name = StringField(required=True, max_length=50)
     is_predefined = BooleanField(default=False)
 
 
 class AssetType(BaseDocument):
+    user_id = ReferenceField(User, required=True)
     name = StringField(required=True, unique=True, max_length=50)
     is_predefined = BooleanField(default=False)
 
 
 class Asset(BaseDocument):
+    user_id = ReferenceField(User, required=True)
     asset_type = ReferenceField(AssetType, required=True)
     name = StringField(required=True, max_length=50)
     description = StringField(required=False, max_length=255)
     value = DecimalField(required=True, precision=10)
-    user_id = ReferenceField(User, required=True)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)

@@ -20,13 +20,16 @@ class TransactionController:
         await cls._validate_transaction_data(transaction_schema, user.id)
         transaction = cls._create_transaction_obj_to_create(transaction_schema, user.id)
 
-        with mongoengine.connection.get_connection().start_session() as session:
-            with session.start_transaction():
-                transaction_in_db: Transaction = await TransactionCRUD.create_one(
-                    transaction
-                )
-                await cls._update_wallet_balances(transaction_in_db, user.id)
-                return transaction_in_db.to_dict()
+        transaction_in_db: Transaction = await TransactionCRUD.create_one(
+            transaction
+        )
+        # make sure updating balances occur if transaction is created
+        try:
+            await cls._update_wallet_balances(transaction_in_db, user.id)
+            return transaction_in_db.to_dict()
+        except Exception as e:
+            await TransactionCRUD.delete_one_by_user(transaction_in_db.id, user.id)
+            raise e
 
     @classmethod
     async def _validate_transaction_data(
@@ -80,7 +83,7 @@ class TransactionController:
             user_id,
             add=True,
         )
-        
+
     @classmethod
     async def _fetch_and_validate_wallets_for_transaction(
         cls, transaction, user_id: str

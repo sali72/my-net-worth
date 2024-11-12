@@ -20,7 +20,6 @@ class TransactionController:
         await cls._validate_transaction_data(transaction_schema, user.id)
         transaction = cls._create_transaction_obj_to_create(transaction_schema, user.id)
 
-        # Start a session using mongoengine
         with mongoengine.connection.get_connection().start_session() as session:
             with session.start_transaction():
                 transaction_in_db: Transaction = await TransactionCRUD.create_one(
@@ -41,7 +40,7 @@ class TransactionController:
         cls, transaction: Transaction, user_id: str
     ) -> None:
         if transaction.type == "income":
-            await cls._update_wallet_balance(
+            await cls._get_wallet_and_update_balance(
                 transaction.to_wallet_id.id,
                 transaction.currency_id.id,
                 transaction.amount,
@@ -49,7 +48,7 @@ class TransactionController:
                 add=True,
             )
         elif transaction.type == "expense":
-            await cls._update_wallet_balance(
+            await cls._get_wallet_and_update_balance(
                 transaction.from_wallet_id.id,
                 transaction.currency_id.id,
                 transaction.amount,
@@ -57,30 +56,90 @@ class TransactionController:
                 add=False,
             )
         elif transaction.type == "transfer":
-            await cls._update_wallet_balance(
-                transaction.from_wallet_id.id,
-                transaction.currency_id.id,
-                transaction.amount,
-                user_id,
-                add=False,
-            )
-            await cls._update_wallet_balance(
-                transaction.to_wallet_id.id,
-                transaction.currency_id.id,
-                transaction.amount,
-                user_id,
-                add=True,
-            )
+            await cls._update_wallet_balance_transfer(transaction, user_id)
 
     @classmethod
-    async def _update_wallet_balance(
+    async def _update_wallet_balance_transfer(cls, transaction, user_id):
+        from_wallet = await WalletCRUD.get_one_by_user(
+            transaction.from_wallet_id.id, user_id
+        )
+        to_wallet = await WalletCRUD.get_one_by_user(
+            transaction.to_wallet_id.id, user_id
+        )
+
+        if not cls._validate_currency_match(
+            from_wallet, to_wallet, transaction.currency_id.id
+        ):
+            raise ValidationError(
+                "Currency of the source wallet must match the destination wallet for transfers."
+            )
+
+        await cls._update_wallet_balance(
+            from_wallet,
+            transaction.from_wallet_id.id,
+            transaction.currency_id.id,
+            transaction.amount,
+            user_id,
+            add=False,
+        )
+        await cls._update_wallet_balance(
+            to_wallet,
+            transaction.to_wallet_id.id,
+            transaction.currency_id.id,
+            transaction.amount,
+            user_id,
+            add=True,
+        )
+
+    @staticmethod
+    def _validate_currency_match(
+        from_wallet: Wallet, to_wallet: Wallet, currency_id: str
+    ) -> bool:
+        from_currency_match = any(
+            balance.currency_id.pk == currency_id
+            for balance in from_wallet.currency_balances
+        )
+        to_currency_match = any(
+            balance.currency_id.pk == currency_id
+            for balance in to_wallet.currency_balances
+        )
+        return from_currency_match and to_currency_match
+
+    @classmethod
+    async def _get_wallet_and_update_balance(
         cls, wallet_id: str, currency_id: str, amount: float, user_id: str, add: bool
     ) -> None:
         wallet = await WalletCRUD.get_one_by_user(wallet_id, user_id)
 
-        if not add:
-            await cls._validate_balance(wallet, currency_id, amount)
+        await cls._update_wallet_balance(
+            wallet,
+            wallet_id,
+            currency_id,
+            amount,
+            user_id,
+            add,
+        )
 
+    @classmethod
+    async def _update_wallet_balance(
+        cls,
+        wallet: Wallet,
+        wallet_id: str,
+        currency_id: str,
+        amount: float,
+        user_id: str,
+        add: bool,
+    ) -> None:
+
+        if not add:
+            await cls._validate_balance_sufficiency(wallet, currency_id, amount)
+
+        cls._adjust_balance_amount(currency_id, amount, add, wallet)
+
+        await WalletCRUD.update_one_by_user(user_id, wallet_id, wallet)
+
+    @classmethod
+    def _adjust_balance_amount(cls, currency_id, amount, add, wallet):
         for currency_balance in wallet.currency_balances:
             if currency_balance.currency_id.pk == currency_id:
                 if add:
@@ -88,10 +147,9 @@ class TransactionController:
                 else:
                     currency_balance.balance -= amount
                 break
-        await WalletCRUD.update_one_by_user(user_id, wallet_id, wallet)
 
     @classmethod
-    async def _validate_balance(
+    async def _validate_balance_sufficiency(
         cls,
         wallet: Wallet,
         currency_id: str,

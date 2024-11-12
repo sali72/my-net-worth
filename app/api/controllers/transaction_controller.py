@@ -1,12 +1,13 @@
 from typing import List
 
 import mongoengine
+from mongoengine import ValidationError
 
 from app.crud.category_crud import CategoryCRUD
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.transaction_crud import TransactionCRUD
 from app.crud.wallet_crud import WalletCRUD
-from models.models import Transaction, User
+from models.models import Transaction, User, Wallet
 from models.schemas import TransactionCreateSchema, TransactionUpdateSchema
 
 
@@ -76,6 +77,10 @@ class TransactionController:
         cls, wallet_id: str, currency_id: str, amount: float, user_id: str, add: bool
     ) -> None:
         wallet = await WalletCRUD.get_one_by_user(wallet_id, user_id)
+
+        if not add:
+            await cls._validate_balance(wallet, currency_id, amount)
+
         for currency_balance in wallet.currency_balances:
             if currency_balance.currency_id.pk == currency_id:
                 if add:
@@ -84,6 +89,27 @@ class TransactionController:
                     currency_balance.balance -= amount
                 break
         await WalletCRUD.update_one_by_user(user_id, wallet_id, wallet)
+
+    @classmethod
+    async def _validate_balance(
+        cls,
+        wallet: Wallet,
+        currency_id: str,
+        amount: float,
+    ):
+        if not await cls._has_sufficient_balance(wallet, currency_id, amount):
+            raise ValidationError(
+                "Insufficient balance in the wallet for this transaction."
+            )
+
+    @classmethod
+    async def _has_sufficient_balance(
+        cls, wallet: Wallet, currency_id: str, amount: float
+    ) -> bool:
+        for currency_balance in wallet.currency_balances:
+            if currency_balance.currency_id.pk == currency_id:
+                return currency_balance.balance >= amount
+        return False
 
     @classmethod
     def _create_transaction_obj_to_create(

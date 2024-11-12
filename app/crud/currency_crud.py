@@ -14,6 +14,10 @@ class CurrencyCRUD:
     @classmethod
     async def get_one_by_id(cls, currency_id: str) -> Currency:
         return Currency.objects.get(pk=ObjectId(currency_id))
+    
+    @classmethod
+    async def get_one_by_user(cls, currency_id: str, user_id: str) -> Currency:
+        return Currency.objects.get(id=currency_id, user_id=user_id)
 
     @classmethod
     async def find_by_currency_codes_optional(

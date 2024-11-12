@@ -7,6 +7,7 @@ class TransactionCRUD:
 
     @classmethod
     async def create_one(cls, transaction: Transaction) -> Transaction:
+        transaction.clean()
         transaction.save()
         return transaction
 
@@ -33,18 +34,23 @@ class TransactionCRUD:
         cls, user_id: str, transaction_id: str, updated_transaction: Transaction
     ):
         transaction = await cls.get_one_by_user(transaction_id, user_id)
-        cls.__update_transaction_fields(transaction, updated_transaction)
-        cls.__update_timestamp(transaction)
+        cls._update_transaction_fields(transaction, updated_transaction)
+        cls._update_timestamp(transaction)
+        transaction.clean()
         transaction.save()
 
     @staticmethod
-    def __update_transaction_fields(
+    def _update_transaction_fields(
         transaction: Transaction, updated_transaction: Transaction
     ):
-        if updated_transaction.wallet_id is not None:
-            transaction.wallet_id = updated_transaction.wallet_id
+        if updated_transaction.from_wallet_id is not None:
+            transaction.from_wallet_id = updated_transaction.from_wallet_id
+        if updated_transaction.to_wallet_id is not None:
+            transaction.to_wallet_id = updated_transaction.to_wallet_id
         if updated_transaction.category_id is not None:
             transaction.category_id = updated_transaction.category_id
+        if updated_transaction.currency_id is not None:
+            transaction.currency_id = updated_transaction.currency_id
         if updated_transaction.type is not None:
             transaction.type = updated_transaction.type
         if updated_transaction.amount is not None:
@@ -55,7 +61,7 @@ class TransactionCRUD:
             transaction.description = updated_transaction.description
 
     @staticmethod
-    def __update_timestamp(transaction: Transaction):
+    def _update_timestamp(transaction: Transaction):
         transaction.updated_at = datetime.utcnow()
 
     @classmethod

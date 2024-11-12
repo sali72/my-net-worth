@@ -67,8 +67,6 @@ class WalletController:
     async def get_all_wallets(cls, user_id: str) -> List[dict]:
         wallets: List[Wallet] = await WalletCRUD.get_all_by_user_id_optional(user_id)
         wallets_list = [wallet.to_dict() for wallet in wallets]
-        for wallet in wallets_list:
-            print(">>>>: ", wallet)
         return wallets_list
 
     @classmethod

@@ -25,7 +25,6 @@ class TransactionController:
                 transaction_in_db: Transaction = await TransactionCRUD.create_one(
                     transaction
                 )
-                print(">>: ", user.id)
                 await cls._update_wallet_balances(transaction_in_db, user.id)
                 return transaction_in_db.to_dict()
 
@@ -77,7 +76,6 @@ class TransactionController:
         cls, wallet_id: str, currency_id: str, amount: float, user_id: str, add: bool
     ) -> None:
         wallet = await WalletCRUD.get_one_by_user(wallet_id, user_id)
-        print("userid: ", user_id)
         for currency_balance in wallet.currency_balances:
             if currency_balance.currency_id.pk == currency_id:
                 if add:

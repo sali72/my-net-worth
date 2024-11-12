@@ -65,7 +65,7 @@ class TransactionCRUD:
         transaction.updated_at = datetime.utcnow()
 
     @classmethod
-    async def delete_one_by_user(cls, user_id: str, transaction_id: str) -> bool:
+    async def delete_one_by_user(cls, transaction_id: str, user_id: str) -> bool:
         result = Transaction.objects(id=transaction_id, user_id=user_id).delete()
         if result == 0:
             raise DoesNotExist(

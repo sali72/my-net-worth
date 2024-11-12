@@ -2,7 +2,7 @@ from typing import List
 
 import mongoengine
 from mongoengine import ValidationError
-
+from typing import Tuple
 from app.crud.category_crud import CategoryCRUD
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.transaction_crud import TransactionCRUD
@@ -60,19 +60,9 @@ class TransactionController:
 
     @classmethod
     async def _update_wallet_balance_transfer(cls, transaction, user_id):
-        from_wallet = await WalletCRUD.get_one_by_user(
-            transaction.from_wallet_id.id, user_id
+        from_wallet, to_wallet = await cls._fetch_and_validate_wallets_for_transaction(
+            transaction, user_id
         )
-        to_wallet = await WalletCRUD.get_one_by_user(
-            transaction.to_wallet_id.id, user_id
-        )
-
-        if not cls._validate_currency_match(
-            from_wallet, to_wallet, transaction.currency_id.id
-        ):
-            raise ValidationError(
-                "Currency of the source wallet must match the destination wallet for transfers."
-            )
 
         await cls._update_wallet_balance(
             from_wallet,
@@ -90,6 +80,26 @@ class TransactionController:
             user_id,
             add=True,
         )
+        
+    @classmethod
+    async def _fetch_and_validate_wallets_for_transaction(
+        cls, transaction, user_id: str
+    ) -> Tuple[Wallet, Wallet]:
+        from_wallet = await WalletCRUD.get_one_by_user(
+            transaction.from_wallet_id.id, user_id
+        )
+        to_wallet = await WalletCRUD.get_one_by_user(
+            transaction.to_wallet_id.id, user_id
+        )
+
+        if not cls._validate_currency_match(
+            from_wallet, to_wallet, transaction.currency_id.id
+        ):
+            raise ValidationError(
+                "Currency of the source wallet must match the destination wallet for transfers."
+            )
+
+        return from_wallet, to_wallet
 
     @staticmethod
     def _validate_currency_match(
@@ -230,5 +240,72 @@ class TransactionController:
 
     @classmethod
     async def delete_transaction(cls, transaction_id: str, user_id: str) -> bool:
-        await TransactionCRUD.delete_one_by_user(user_id, transaction_id)
+        transaction = await TransactionCRUD.get_one_by_user(transaction_id, user_id)
+        await cls._reverse_transaction_effects(transaction, user_id)
+        await cls._delete_transaction_from_db(transaction_id, user_id)
         return True
+
+    @classmethod
+    async def _reverse_transaction_effects(
+        cls, transaction: Transaction, user_id: str
+    ) -> None:
+        if transaction.type == "income":
+            await cls._reverse_income_effect(transaction, user_id)
+        elif transaction.type == "expense":
+            await cls._reverse_expense_effect(transaction, user_id)
+        elif transaction.type == "transfer":
+            await cls._reverse_wallet_balance_transfer(transaction, user_id)
+
+    @classmethod
+    async def _reverse_income_effect(
+        cls, transaction: Transaction, user_id: str
+    ) -> None:
+        await cls._get_wallet_and_update_balance(
+            transaction.to_wallet_id.id,
+            transaction.currency_id.id,
+            transaction.amount,
+            user_id,
+            add=False,  # Reverse the addition
+        )
+
+    @classmethod
+    async def _reverse_expense_effect(
+        cls, transaction: Transaction, user_id: str
+    ) -> None:
+        await cls._get_wallet_and_update_balance(
+            transaction.from_wallet_id.id,
+            transaction.currency_id.id,
+            transaction.amount,
+            user_id,
+            add=True,  # Reverse the subtraction
+        )
+
+    @classmethod
+    async def _reverse_wallet_balance_transfer(cls, transaction, user_id):
+        from_wallet, to_wallet = await cls._fetch_and_validate_wallets_for_transaction(
+            transaction, user_id
+        )
+
+        # Reverse the transfer: add back to the source and subtract from the destination
+        await cls._update_wallet_balance(
+            from_wallet,
+            transaction.from_wallet_id.id,
+            transaction.currency_id.id,
+            transaction.amount,
+            user_id,
+            add=True,  # Reverse the subtraction
+        )
+        await cls._update_wallet_balance(
+            to_wallet,
+            transaction.to_wallet_id.id,
+            transaction.currency_id.id,
+            transaction.amount,
+            user_id,
+            add=False,  # Reverse the addition
+        )
+
+    @classmethod
+    async def _delete_transaction_from_db(
+        cls, transaction_id: str, user_id: str
+    ) -> None:
+        await TransactionCRUD.delete_one_by_user(transaction_id, user_id)

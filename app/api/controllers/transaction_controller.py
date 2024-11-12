@@ -244,9 +244,13 @@ class TransactionController:
     @classmethod
     async def delete_transaction(cls, transaction_id: str, user_id: str) -> bool:
         transaction = await TransactionCRUD.get_one_by_user(transaction_id, user_id)
-        await cls._reverse_transaction_effects(transaction, user_id)
-        await cls._delete_transaction_from_db(transaction_id, user_id)
-        return True
+        await TransactionCRUD.delete_one_by_user(transaction_id, user_id)
+        try:
+            await cls._reverse_transaction_effects(transaction, user_id)
+            return True
+        except Exception as e:
+            await TransactionCRUD.create_one(transaction)
+            raise e
 
     @classmethod
     async def _reverse_transaction_effects(
@@ -306,9 +310,3 @@ class TransactionController:
             user_id,
             add=False,  # Reverse the addition
         )
-
-    @classmethod
-    async def _delete_transaction_from_db(
-        cls, transaction_id: str, user_id: str
-    ) -> None:
-        await TransactionCRUD.delete_one_by_user(transaction_id, user_id)

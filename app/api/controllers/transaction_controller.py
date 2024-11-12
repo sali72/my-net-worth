@@ -1,6 +1,5 @@
 from typing import List
 
-import mongoengine
 from mongoengine import ValidationError
 from typing import Tuple
 from app.crud.category_crud import CategoryCRUD
@@ -20,9 +19,7 @@ class TransactionController:
         await cls._validate_transaction_data(transaction_schema, user.id)
         transaction = cls._create_transaction_obj_to_create(transaction_schema, user.id)
 
-        transaction_in_db: Transaction = await TransactionCRUD.create_one(
-            transaction
-        )
+        transaction_in_db: Transaction = await TransactionCRUD.create_one(transaction)
         # make sure updating balances occur if transaction is created
         try:
             await cls._update_wallet_balances(transaction_in_db, user.id)
@@ -217,12 +214,32 @@ class TransactionController:
         transaction_update_schema: TransactionUpdateSchema,
         user_id: str,
     ) -> dict:
+
+        existing_transaction = await TransactionCRUD.get_one_by_user(
+            transaction_id, user_id
+        )
         updated_transaction = cls._create_transaction_obj_for_update(
             transaction_update_schema
         )
+        amount_difference = updated_transaction.amount - existing_transaction.amount
+
         await TransactionCRUD.update_one_by_user(
             user_id, transaction_id, updated_transaction
         )
+
+        if amount_difference != 0:
+            try:
+                await cls._adjust_wallet_balances_for_update(
+                    existing_transaction,
+                    user_id,
+                    amount_difference,
+                )
+            except Exception as e:
+                await TransactionCRUD.update_one_by_user(
+                    user_id, transaction_id, existing_transaction
+                )
+                raise e
+
         transaction_from_db = await TransactionCRUD.get_one_by_id(transaction_id)
         return transaction_from_db.to_dict()
 
@@ -239,6 +256,56 @@ class TransactionController:
             amount=transaction_schema.amount,
             date=transaction_schema.date,
             description=transaction_schema.description,
+        )
+
+    @classmethod
+    async def _adjust_wallet_balances_for_update(
+        cls,
+        existing_transaction: Transaction,
+        user_id: str,
+        amount_difference: float,
+    ) -> None:
+        if existing_transaction.type == "income":
+            await cls._get_wallet_and_update_balance(
+                existing_transaction.to_wallet_id.id,
+                existing_transaction.currency_id.id,
+                abs(amount_difference),
+                user_id,
+                add=(amount_difference > 0),
+            )
+        elif existing_transaction.type == "expense":
+            await cls._get_wallet_and_update_balance(
+                existing_transaction.from_wallet_id.id,
+                existing_transaction.currency_id.id,
+                abs(amount_difference),
+                user_id,
+                add=(amount_difference < 0),
+            )
+        elif existing_transaction.type == "transfer":
+            await cls._adjust_transfer_wallet_balances_for_update(
+                existing_transaction, user_id, amount_difference
+            )
+
+    @classmethod
+    async def _adjust_transfer_wallet_balances_for_update(
+        cls,
+        existing_transaction: Transaction,
+        user_id: str,
+        amount_difference: float,
+    ) -> None:
+        await cls._get_wallet_and_update_balance(
+            existing_transaction.from_wallet_id.id,
+            existing_transaction.currency_id.id,
+            abs(amount_difference),
+            user_id,
+            add=(amount_difference < 0),
+        )
+        await cls._get_wallet_and_update_balance(
+            existing_transaction.to_wallet_id.id,
+            existing_transaction.currency_id.id,
+            abs(amount_difference),
+            user_id,
+            add=(amount_difference > 0),
         )
 
     @classmethod

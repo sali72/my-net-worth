@@ -18,12 +18,7 @@ class WalletCRUD:
 
     @classmethod
     async def get_one_by_user(cls, wallet_id: str, user_id: str) -> Wallet:
-        try:
-            return Wallet.objects.get(id=wallet_id, user_id=user_id)
-        except DoesNotExist:
-            raise DoesNotExist(
-                f"Wallet with id {wallet_id} for user {user_id} does not exist"
-            )
+        return Wallet.objects.get(id=wallet_id, user_id=user_id)
 
     @classmethod
     async def get_all_by_user_id_optional(cls, user_id: str) -> QuerySet:
@@ -55,17 +50,16 @@ class WalletCRUD:
     def __update_currency_balances(wallet: Wallet, updated_wallet: Wallet):
         if updated_wallet.currency_balances is not None:
             for updated_balance in updated_wallet.currency_balances:
+                match_found = False
                 for existing_balance in wallet.currency_balances:
-                    if (
-                        existing_balance.currency_id.pk
-                        == updated_balance.currency_id.pk
-                    ):
+                    if existing_balance.currency_id.pk == updated_balance.currency_id.pk:
                         existing_balance.balance = updated_balance.balance
-                    else:
-                        raise HTTPException(
-                            status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Currency id is not related to this user",
-                        )
+                        match_found = True
+                if not match_found:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Currency ids provided are not related to this user",
+                    )
 
     @staticmethod
     def __update_timestamp(wallet: Wallet):

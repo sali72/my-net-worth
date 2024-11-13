@@ -60,8 +60,7 @@ class BaseDocument(Document):
 class User(BaseDocument):
     name = StringField(required=False, max_length=50)
     username = StringField(required=True, unique=True)
-    # email = EmailField(required=True, unique=True) #TODO uncomment it
-    email = StringField(required=True, unique=True)
+    email = EmailField(required=True, unique=True)
     hashed_password = StringField(required=True)
     role = StringField(required=True, choices=["user", "admin"])
     created_at = DateTimeField(default=datetime.utcnow)
@@ -70,7 +69,7 @@ class User(BaseDocument):
 
 class Currency(BaseDocument):
     user_id = ReferenceField("User", required=True)
-    code = StringField(required=True, max_length=3, unique=True)
+    code = StringField(required=True, max_length=3)
     name = StringField(required=True, max_length=50)
     symbol = StringField(required=True, max_length=5)
     is_predefined = BooleanField(default=False)
@@ -78,6 +77,14 @@ class Currency(BaseDocument):
     currency_type = StringField(required=True, choices=["fiat", "crypto"])
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
+    meta = {
+        "indexes": [
+            {
+                "fields": ("user_id", "code"),
+                "unique": True,
+            }
+        ]
+    }
 
     def save(self, *args, **kwargs):
         if self.is_base_currency:
@@ -100,11 +107,19 @@ class CurrencyBalance(EmbeddedDocument):
 
 class Wallet(BaseDocument):
     user_id = ReferenceField("User", required=True)
-    name = StringField(unique=True, required=True, max_length=50)
+    name = StringField(required=True, max_length=50)
     type = StringField(required=True, choices=["fiat", "crypto"])
     currency_balances = ListField(EmbeddedDocumentField(CurrencyBalance), required=True)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
+    meta = {
+        "indexes": [
+            {
+                "fields": ("user_id", "name"),
+                "unique": True,
+            }
+        ]
+    }
 
 
 class CurrencyExchange(BaseDocument):
@@ -168,24 +183,48 @@ class Transaction(BaseDocument):
 
 class Category(BaseDocument):
     user_id = ReferenceField(User, required=True)
-    name = StringField(required=True, max_length=50, unique=True)
+    name = StringField(required=True, max_length=50)
     type = StringField(required=True, choices=["income", "expense", "transfer"])
     description = StringField(max_length=255)
     is_predefined = BooleanField(default=False)
-    
+    meta = {
+        "indexes": [
+            {
+                "fields": ("user_id", "name"),
+                "unique": True,
+            }
+        ]
+    }
 
 
 class AssetType(BaseDocument):
     user_id = ReferenceField(User, required=True)
-    name = StringField(required=True, unique=True, max_length=50)
+    name = StringField(required=True, max_length=50)
+    description = StringField(required=False, max_length=255)
     is_predefined = BooleanField(default=False)
+    meta = {
+        "indexes": [
+            {
+                "fields": ("user_id", "name"),
+                "unique": True,
+            }
+        ]
+    }
 
 
 class Asset(BaseDocument):
     user_id = ReferenceField(User, required=True)
-    asset_type = ReferenceField(AssetType, required=True)
+    asset_type = ReferenceField(AssetType, required=False)
     name = StringField(required=True, max_length=50)
     description = StringField(required=False, max_length=255)
     value = DecimalField(required=True, precision=10)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
+    meta = {
+        "indexes": [
+            {
+                "fields": ("user_id", "name"),
+                "unique": True,
+            }
+        ]
+    }

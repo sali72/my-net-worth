@@ -214,7 +214,7 @@ class AssetType(BaseDocument):
 
 class Asset(BaseDocument):
     user_id = ReferenceField(User, required=True)
-    asset_type = ReferenceField(AssetType, required=False)
+    asset_type_id = ReferenceField(AssetType, required=False)
     name = StringField(required=True, max_length=50)
     description = StringField(required=False, max_length=255)
     value = DecimalField(required=True, precision=10)

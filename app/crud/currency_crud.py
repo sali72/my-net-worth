@@ -1,7 +1,9 @@
-from models.models import Currency
 from typing import List
-from mongoengine import DoesNotExist
+
 from bson import ObjectId
+from mongoengine import DoesNotExist, QuerySet
+
+from models.models import Currency
 
 
 class CurrencyCRUD:
@@ -14,10 +16,14 @@ class CurrencyCRUD:
     @classmethod
     async def get_one_by_id(cls, currency_id: str) -> Currency:
         return Currency.objects.get(pk=ObjectId(currency_id))
-    
+
     @classmethod
     async def get_one_by_user(cls, currency_id: str, user_id: str) -> Currency:
         return Currency.objects.get(id=currency_id, user_id=user_id)
+
+    @classmethod
+    async def get_all_by_user_id(cls, user_id: str) -> QuerySet:
+        return Currency.objects(user_id=user_id)
 
     @classmethod
     async def find_by_currency_codes_optional(
@@ -53,7 +59,6 @@ class CurrencyCRUD:
     @classmethod
     async def find_by_currency_ids(cls, currency_ids_list: List[str]) -> List[Currency]:
         currencies = await cls.find_by_currency_ids_optional(currency_ids_list)
-
         if not currencies:
             raise DoesNotExist(f"No currencies found for IDs: {currency_ids_list}")
 
@@ -62,9 +67,36 @@ class CurrencyCRUD:
                 currency.currency_id for currency in currencies
             )
             raise DoesNotExist(f"Missing currencies for IDs: {missing_ids}")
-
         return list(currencies)
 
     @classmethod
     async def get_base_currency(cls, user_id: str) -> Currency:
         return Currency.objects.get(user_id=user_id, is_base_currency=True)
+
+    @classmethod
+    async def update_one_by_user(
+        cls, user_id: str, currency_id: str, updated_currency: Currency
+    ):
+        currency = await cls.get_one_by_user(currency_id, user_id)
+        cls.__update_currency_fields(currency, updated_currency)
+        currency.save()
+
+    @classmethod
+    def __update_currency_fields(cls, currency: Currency, updated_currency: Currency):
+        if updated_currency.code is not None:
+            currency.code = updated_currency.code
+        if updated_currency.name is not None:
+            currency.name = updated_currency.name
+        if updated_currency.symbol is not None:
+            currency.symbol = updated_currency.symbol
+        if updated_currency.currency_type is not None:
+            currency.currency_type = updated_currency.currency_type
+
+    @classmethod
+    async def delete_one_by_user(cls, currency_id: str, user_id: str) -> bool:
+        result = Currency.objects(id=currency_id, user_id=user_id).delete()
+        if result == 0:
+            raise DoesNotExist(
+                f"Currency with id {currency_id} for user {user_id} does not exist"
+            )
+        return result > 0

@@ -1,18 +1,19 @@
 from datetime import datetime
+
 from bson import ObjectId
 from mongoengine import (
     BooleanField,
     DateTimeField,
     DecimalField,
     Document,
-    ListField,
-    ReferenceField,
-    StringField,
-    ValidationError,
     EmailField,
     EmbeddedDocument,
     EmbeddedDocumentField,
     LazyReferenceField,
+    ListField,
+    ReferenceField,
+    StringField,
+    ValidationError,
 )
 
 
@@ -82,7 +83,15 @@ class Currency(BaseDocument):
             {
                 "fields": ("user_id", "code"),
                 "unique": True,
-            }
+            },
+            {
+                "fields": ("user_id", "name"),
+                "unique": True,
+            },
+            {
+                "fields": ("user_id", "symbol"),
+                "unique": True,
+            },
         ]
     }
 

@@ -1,5 +1,4 @@
 from mongoengine import DoesNotExist, QuerySet
-
 from models.models import Category
 
 
@@ -30,11 +29,15 @@ class CategoryCRUD:
     def __update_category_fields(category: Category, updated_category: Category):
         if updated_category.name is not None:
             category.name = updated_category.name
+        if updated_category.type is not None:
+            category.type = updated_category.type
+        if updated_category.description is not None:
+            category.description = updated_category.description
         if updated_category.is_predefined is not None:
             category.is_predefined = updated_category.is_predefined
 
     @classmethod
-    async def delete_one_by_user(cls, user_id: str, category_id: str) -> bool:
+    async def delete_one_by_user(cls, category_id: str, user_id: str) -> bool:
         result = Category.objects(id=category_id, user_id=user_id).delete()
         if result == 0:
             raise DoesNotExist(

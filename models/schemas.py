@@ -59,19 +59,36 @@ class WalletUpdateSchema(BaseModel):
     )
 
 
-class CurrencySchema(BaseModel):
-    code: str = Field(..., max_length=10, example="USD")
+class CurrencyCreateSchema(BaseModel):
+    code: str = Field(..., max_length=3, example="USD")
     name: str = Field(..., max_length=50, example="United States Dollar")
     symbol: str = Field(..., max_length=5, example="$")
-    is_predefined: bool = Field(False, example=True)
-    is_base_currency: bool = Field(False, example=True)
     currency_type: str = Field(..., choices=["fiat", "crypto"], example="fiat")
 
 
-class CurrencyExchangeSchema(BaseModel):
-    from_currency_id: str = Field(None, example="USD")
-    to_currency_id: str = Field(None, example="EUR")
-    rate: float = Field(None, example=0.85)
+class CurrencyUpdateSchema(BaseModel):
+    code: Optional[str] = Field(None, max_length=3, example="USD")
+    name: Optional[str] = Field(None, max_length=50, example="United States Dollar")
+    symbol: Optional[str] = Field(None, max_length=5, example="$")
+    currency_type: Optional[str] = Field(
+        None, choices=["fiat", "crypto"], example="fiat"
+    )
+
+
+class CurrencyExchangeCreateSchema(BaseModel):
+    from_currency_id: str = Field(..., example="currency_id_123")
+    to_currency_id: str = Field(..., example="currency_id_456")
+    rate: float = Field(..., example=0.85)
+    date: Optional[datetime] = Field(
+        default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
+    )
+
+
+class CurrencyExchangeUpdateSchema(BaseModel):
+    from_currency_id: Optional[str] = Field(None, example="currency_id_123")
+    to_currency_id: Optional[str] = Field(None, example="currency_id_456")
+    rate: Optional[float] = Field(None, example=0.85)
+    date: Optional[datetime] = Field(None, example="2023-10-15T14:30:00Z")
 
 
 class TransactionBaseSchema(BaseModel):
@@ -182,22 +199,19 @@ class AssetTypeUpdateSchema(BaseModel):
 
 
 class AssetCreateSchema(BaseModel):
-    asset_type: Optional[str] = Field(None, example="asset_type_id_123")
+    asset_type_id: Optional[str] = Field(None, example="asset_type_id_123")
     name: str = Field(..., max_length=50, example="Family Home")
     description: Optional[str] = Field(
         None, max_length=255, example="A beautiful house in the suburbs"
     )
     value: float = Field(..., example=350000.00)
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
-    )
-    updated_at: datetime = Field(
+    created_at: Optional[datetime] = Field(
         default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
     )
 
 
 class AssetUpdateSchema(BaseModel):
-    asset_type: Optional[str] = Field(None, example="asset_type_id_123")
+    asset_type_id: Optional[str] = Field(None, example="asset_type_id_123")
     name: Optional[str] = Field(None, max_length=50, example="Family Home")
     description: Optional[str] = Field(
         None, max_length=255, example="A beautiful house in the suburbs"

@@ -128,7 +128,7 @@ class CurrencyExchange(BaseDocument):
     to_currency_id = ReferenceField(Currency, required=True)
     rate = DecimalField(required=True)
     date = DateTimeField(default=datetime.utcnow)
-    # make sure "user_id", "from_currency_id" and "to_currency_id" are unique together
+
     meta = {
         "indexes": [
             {
@@ -137,6 +137,21 @@ class CurrencyExchange(BaseDocument):
             }
         ]
     }
+
+    def save(self, *args, **kwargs):
+        # Check for the existence of the reverse currency pair
+        reverse_pair_exists = CurrencyExchange.objects(
+            user_id=self.user_id,
+            from_currency_id=self.to_currency_id,
+            to_currency_id=self.from_currency_id,
+        ).first()
+
+        if reverse_pair_exists:
+            raise ValidationError(
+                "A reverse currency exchange pair already exists for this user."
+            )
+
+        return super(CurrencyExchange, self).save(*args, **kwargs)
 
 
 class Transaction(BaseDocument):

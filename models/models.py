@@ -128,8 +128,8 @@ class Transaction(BaseDocument):
     user_id = ReferenceField(User, required=True)
     from_wallet_id = ReferenceField(Wallet, required=False)
     to_wallet_id = ReferenceField(Wallet, required=False)
-    category_id = ReferenceField("Category", required=True)
-    currency_id = ReferenceField("Currency", required=True)  # Add currency_id
+    category_id = ReferenceField("Category", required=False)
+    currency_id = ReferenceField("Currency", required=True)
     type = StringField(required=True, choices=["income", "expense", "transfer"])
     amount = DecimalField(required=True, precision=2)
     date = DateTimeField(default=datetime.utcnow)
@@ -168,8 +168,11 @@ class Transaction(BaseDocument):
 
 class Category(BaseDocument):
     user_id = ReferenceField(User, required=True)
-    name = StringField(required=True, max_length=50)
+    name = StringField(required=True, max_length=50, unique=True)
+    type = StringField(required=True, choices=["income", "expense", "transfer"])
+    description = StringField(max_length=255)
     is_predefined = BooleanField(default=False)
+    
 
 
 class AssetType(BaseDocument):

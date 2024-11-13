@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
+from typing import List, Optional
 
-from pydantic import BaseModel, Extra, Field, model_validator
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Extra, Field, model_validator
 
 
 class BaseModelConfigured(BaseModel):
@@ -30,7 +30,7 @@ class ErrorResponseModel(BaseModelConfigured):
 
 class UserSchema(BaseModel):
     username: str = Field(None, example="johndoe")
-    email: str = Field(None, example="johndoe@example.com")
+    email: EmailStr = Field(None, example="johndoe@example.com")
     password: str = Field(None, example="strongpassword123")
 
 
@@ -72,11 +72,6 @@ class CurrencyExchangeSchema(BaseModel):
     from_currency_id: str = Field(None, example="USD")
     to_currency_id: str = Field(None, example="EUR")
     rate: float = Field(None, example=0.85)
-
-
-from datetime import datetime
-from pydantic import BaseModel, Field, model_validator
-from typing import Optional, List
 
 
 class TransactionBaseSchema(BaseModel):
@@ -176,17 +171,41 @@ class CategoryUpdateSchema(BaseModel):
     )
 
 
-class AssetTypeSchema(BaseModel):
+class AssetTypeCreateSchema(BaseModel):
     name: str = Field(..., max_length=50, example="Real Estate")
+    description: Optional[str] = Field(None, max_length=255, example="My properties")
 
 
-class AssetSchema(BaseModel):
-    asset_type: str = Field(..., example="Real Estate")
+class AssetTypeUpdateSchema(BaseModel):
+    name: Optional[str] = Field(None, max_length=50, example="Real Estate")
+    description: Optional[str] = Field(None, max_length=255, example="My properties")
+
+
+class AssetCreateSchema(BaseModel):
+    asset_type: Optional[str] = Field(None, example="asset_type_id_123")
     name: str = Field(..., max_length=50, example="Family Home")
     description: Optional[str] = Field(
         None, max_length=255, example="A beautiful house in the suburbs"
     )
     value: float = Field(..., example=350000.00)
+    created_at: datetime = Field(
+        default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
+    )
+    updated_at: datetime = Field(
+        default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
+    )
+
+
+class AssetUpdateSchema(BaseModel):
+    asset_type: Optional[str] = Field(None, example="asset_type_id_123")
+    name: Optional[str] = Field(None, max_length=50, example="Family Home")
+    description: Optional[str] = Field(
+        None, max_length=255, example="A beautiful house in the suburbs"
+    )
+    value: Optional[float] = Field(None, example=350000.00)
+    updated_at: datetime = Field(
+        default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
+    )
 
 
 class Token(BaseModel):

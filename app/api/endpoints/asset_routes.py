@@ -29,6 +29,15 @@ async def create_asset_route(
     return ResponseSchema(data=data, message=message)
 
 
+@router.get("/total-value", response_model=ResponseSchema)
+async def calculate_total_asset_value_route(user=Depends(has_role(R.USER))):
+    total_value = await AssetController.calculate_total_asset_value(user.id)
+    return ResponseSchema(
+        data={"total_value": total_value},
+        message="Total asset value calculated successfully",
+    )
+
+
 @router.get("/{asset_id}", response_model=ResponseSchema)
 async def read_asset_route(
     asset_id: str = Path(..., description="The ID of the asset to retrieve"),

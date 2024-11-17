@@ -69,3 +69,9 @@ class AssetController:
         asset = await AssetCRUD.get_one_by_user(asset_id, user_id)
         await AssetCRUD.delete_one_by_user(asset_id, user_id)
         return True
+
+    @classmethod
+    async def calculate_total_asset_value(cls, user_id: str) -> float:
+        assets: List[Asset] = await AssetCRUD.get_all_by_user_id(user_id)
+        total_value = sum(asset.value for asset in assets)
+        return total_value

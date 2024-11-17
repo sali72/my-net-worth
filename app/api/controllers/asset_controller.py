@@ -36,7 +36,7 @@ class AssetController:
             currency_id=asset_schema.currency_id,
             name=asset_schema.name,
             description=asset_schema.description,
-            value=asset_schema.value,
+            value=Decimal(asset_schema.value),
         )
 
     @classmethod
@@ -46,7 +46,9 @@ class AssetController:
             currency_id=asset_schema.currency_id,
             name=asset_schema.name,
             description=asset_schema.description,
-            value=asset_schema.value,
+            value=(
+                Decimal(asset_schema.value) if asset_schema.value is not None else None
+            ),
         )
 
     @classmethod
@@ -72,12 +74,11 @@ class AssetController:
 
     @classmethod
     async def delete_asset(cls, asset_id: str, user_id: str) -> bool:
-        asset = await AssetCRUD.get_one_by_user(asset_id, user_id)
         await AssetCRUD.delete_one_by_user(asset_id, user_id)
         return True
 
     @classmethod
-    async def calculate_total_asset_value(cls, user_id: str) -> float:
+    async def calculate_total_asset_value(cls, user_id: str) -> Decimal:
         all_user_assets = await AssetCRUD.get_all_by_user_id(user_id)
         base_currency = await CurrencyCRUD.get_base_currency(user_id)
 
@@ -87,7 +88,7 @@ class AssetController:
                 asset, base_currency, user_id
             )
 
-        return float(total_value)
+        return total_value
 
     @classmethod
     async def _calculate_asset_value(
@@ -105,4 +106,4 @@ class AssetController:
         exchange_rate = await CurrencyExchangeCRUD.get_exchange_rate(
             user_id, asset.currency_id.id, base_currency.id
         )
-        return asset.value * exchange_rate
+        return asset.value * Decimal(exchange_rate)

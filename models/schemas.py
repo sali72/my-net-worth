@@ -1,8 +1,23 @@
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Extra, Field, model_validator
+from pydantic import BaseModel, EmailStr, Extra, Field, field_validator, model_validator
+
+MAX_INTEGER_PART = 10**10
+MAX_DECIMAL_PART = 8
+
+
+def check_value_precision(value: Decimal, field_name: str) -> Decimal:
+    value = Decimal(str(value))
+    if value.as_tuple().exponent < -MAX_DECIMAL_PART:
+        raise ValueError(f"{field_name} cannot have more than eight decimal places")
+    if value >= MAX_INTEGER_PART:
+        raise ValueError(
+            f"{field_name} cannot have an integer part greater than {MAX_INTEGER_PART}"
+        )
+    return value
 
 
 class BaseModelConfigured(BaseModel):
@@ -36,7 +51,11 @@ class UserSchema(BaseModel):
 
 class CurrencyBalanceSchema(BaseModel):
     currency_id: str = Field(..., example="currency_id_123")
-    balance: float = Field(..., example=100.50)
+    balance: Decimal = Field(..., example=Decimal("100.50"))
+
+    @field_validator("balance", mode="before")
+    def validate_balance(cls, v):
+        return check_value_precision(v, "Balance")
 
 
 class WalletCreateSchema(BaseModel):
@@ -45,8 +64,8 @@ class WalletCreateSchema(BaseModel):
     currency_balances: List[CurrencyBalanceSchema] = Field(
         ...,
         example=[
-            {"currency_id": "currency_id_123", "balance": 100.50},
-            {"currency_id": "currency_id_456", "balance": 200.75},
+            {"currency_id": "currency_id_123", "balance": Decimal("100.50")},
+            {"currency_id": "currency_id_456", "balance": Decimal("200.75")},
         ],
     )
 
@@ -55,7 +74,7 @@ class WalletUpdateSchema(BaseModel):
     name: Optional[str] = Field(None, example="Savings Wallet")
     type: Optional[str] = Field(None, choices=["fiat", "crypto"], example="fiat")
     currency_balances: Optional[List[CurrencyBalanceSchema]] = Field(
-        None, example=[{"currency_id": "currency_id_123", "balance": 150.00}]
+        None, example=[{"currency_id": "currency_id_123", "balance": Decimal("150.00")}]
     )
 
 
@@ -78,7 +97,12 @@ class CurrencyUpdateSchema(BaseModel):
 class CurrencyExchangeCreateSchema(BaseModel):
     from_currency_id: str = Field(..., example="currency_id_123")
     to_currency_id: str = Field(..., example="currency_id_456")
-    rate: float = Field(..., example=0.85)
+    rate: Decimal = Field(..., example=Decimal("0.85"))
+
+    @field_validator("rate", mode="before")
+    def validate_rate(cls, v):
+        return check_value_precision(v, "Rate")
+
     date: Optional[datetime] = Field(
         default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
     )
@@ -87,7 +111,14 @@ class CurrencyExchangeCreateSchema(BaseModel):
 class CurrencyExchangeUpdateSchema(BaseModel):
     from_currency_id: Optional[str] = Field(None, example="currency_id_123")
     to_currency_id: Optional[str] = Field(None, example="currency_id_456")
-    rate: Optional[float] = Field(None, example=0.85)
+    rate: Optional[Decimal] = Field(None, example=Decimal("0.85"))
+
+    @field_validator("rate", mode="before")
+    def validate_rate(cls, v):
+        if v is not None:
+            return check_value_precision(v, "Rate")
+        return v
+
     date: Optional[datetime] = Field(None, example="2023-10-15T14:30:00Z")
 
 
@@ -99,7 +130,14 @@ class TransactionBaseSchema(BaseModel):
     type: Optional[str] = Field(
         None, choices=["income", "expense", "transfer"], example="transfer"
     )
-    amount: Optional[float] = Field(None, example=50.75)
+    amount: Optional[Decimal] = Field(None, example=Decimal("50.75"))
+
+    @field_validator("amount", mode="before")
+    def validate_amount(cls, v):
+        if v is not None:
+            return check_value_precision(v, "Amount")
+        return v
+
     date: Optional[datetime] = Field(None, example="2023-10-15T14:30:00Z")
     description: Optional[str] = Field(
         None, max_length=255, example="Transfer to savings"
@@ -158,7 +196,12 @@ class TransactionCreateSchema(TransactionBaseSchema):
     type: str = Field(
         ..., choices=["income", "expense", "transfer"], example="transfer"
     )
-    amount: float = Field(..., example=50.75)
+    amount: Decimal = Field(..., example=Decimal("50.75"))
+
+    @field_validator("amount", mode="before")
+    def validate_amount(cls, v):
+        return check_value_precision(v, "Amount")
+
     date: Optional[datetime] = Field(
         default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
     )
@@ -205,7 +248,12 @@ class AssetCreateSchema(BaseModel):
     description: Optional[str] = Field(
         None, max_length=255, example="A beautiful house in the suburbs"
     )
-    value: float = Field(..., example=350000.00)
+    value: Decimal = Field(..., example=Decimal("350000.00"))
+
+    @field_validator("value", mode="before")
+    def validate_value(cls, v):
+        return check_value_precision(v, "Value")
+
     created_at: Optional[datetime] = Field(
         default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
     )
@@ -218,7 +266,14 @@ class AssetUpdateSchema(BaseModel):
     description: Optional[str] = Field(
         None, max_length=255, example="A beautiful house in the suburbs"
     )
-    value: Optional[float] = Field(None, example=350000.00)
+    value: Optional[Decimal] = Field(None, example=Decimal("350000.00"))
+
+    @field_validator("value", mode="before")
+    def validate_value(cls, v):
+        if v is not None:
+            return check_value_precision(v, "Value")
+        return v
+
     updated_at: datetime = Field(
         default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
     )

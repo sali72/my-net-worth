@@ -16,6 +16,8 @@ from mongoengine import (
     ValidationError,
 )
 
+PRECISION_LIMIT_IN_DB = 10
+
 
 class BaseDocument(Document):
     meta = {"abstract": True}
@@ -111,7 +113,7 @@ class Currency(BaseDocument):
 
 class CurrencyBalance(EmbeddedDocument):
     currency_id = LazyReferenceField("Currency", required=True)
-    balance = DecimalField(min_value=0, required=True)
+    balance = DecimalField(min_value=0, required=True, precision=PRECISION_LIMIT_IN_DB)
 
 
 class Wallet(BaseDocument):
@@ -135,7 +137,7 @@ class CurrencyExchange(BaseDocument):
     user_id = ReferenceField("User", required=True)
     from_currency_id = ReferenceField(Currency, required=True)
     to_currency_id = ReferenceField(Currency, required=True)
-    rate = DecimalField(required=True)
+    rate = DecimalField(required=True, precision=PRECISION_LIMIT_IN_DB)
     date = DateTimeField(default=datetime.utcnow)
 
     meta = {
@@ -170,7 +172,7 @@ class Transaction(BaseDocument):
     category_id = ReferenceField("Category", required=False)
     currency_id = ReferenceField("Currency", required=True)
     type = StringField(required=True, choices=["income", "expense", "transfer"])
-    amount = DecimalField(required=True)
+    amount = DecimalField(required=True, precision=PRECISION_LIMIT_IN_DB)
     date = DateTimeField(default=datetime.utcnow)
     description = StringField(max_length=255)
 
@@ -242,7 +244,7 @@ class Asset(BaseDocument):
     currency_id = ReferenceField(Currency, required=True)
     name = StringField(required=True, max_length=50)
     description = StringField(required=False, max_length=255)
-    value = DecimalField(required=True)
+    value = DecimalField(required=True, precision=PRECISION_LIMIT_IN_DB)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
     meta = {

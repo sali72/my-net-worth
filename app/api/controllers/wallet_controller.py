@@ -42,7 +42,8 @@ class WalletController:
         for cb in currency_balances_in_schema:
             await cls.__validate_currency(cb, wallet_currency_type)
             currency_balance = CurrencyBalance(
-                currency_id=cb.currency_id, balance=cb.balance
+                currency_id=cb.currency_id,
+                balance=Decimal(cb.balance),
             )
             currency_balances.append(currency_balance)
         return currency_balances
@@ -82,7 +83,7 @@ class WalletController:
     ) -> Wallet:
         if wallet_schema.currency_balances:
             currency_balances = await cls.__create_currency_balance_objs_list(
-                wallet_schema.currency_balances
+                wallet_schema.currency_balances, wallet_schema.type
             )
         else:
             currency_balances = None
@@ -100,7 +101,7 @@ class WalletController:
         return True
 
     @classmethod
-    async def calculate_total_wallet_value(cls, user_id: str) -> float:
+    async def calculate_total_wallet_value(cls, user_id: str) -> Decimal:
         wallets = await cls._get_user_wallets(user_id)
         base_currency = await CurrencyCRUD.get_base_currency(user_id)
 
@@ -110,7 +111,7 @@ class WalletController:
                 wallet, base_currency, user_id
             )
 
-        return float(total_value)
+        return total_value
 
     @classmethod
     async def _get_user_wallets(cls, user_id: str) -> List[Wallet]:

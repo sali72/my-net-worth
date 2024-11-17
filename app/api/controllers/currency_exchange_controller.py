@@ -1,4 +1,6 @@
+from decimal import Decimal
 from typing import List
+
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
 from models.models import CurrencyExchange, User
 from models.schemas import CurrencyExchangeCreateSchema, CurrencyExchangeUpdateSchema
@@ -24,7 +26,7 @@ class CurrencyExchangeController:
             user_id=user_id,
             from_currency_id=exchange_schema.from_currency_id,
             to_currency_id=exchange_schema.to_currency_id,
-            rate=exchange_schema.rate,
+            rate=Decimal(str(exchange_schema.rate)),  # Ensure rate is Decimal
             date=exchange_schema.date,
         )
 
@@ -47,8 +49,9 @@ class CurrencyExchangeController:
         exchange_update_schema: CurrencyExchangeUpdateSchema,
         user_id: str,
     ) -> dict:
+        print("before", Decimal(str(exchange_update_schema.rate)))
         updated_exchange = cls._create_exchange_obj_for_update(exchange_update_schema)
-
+        print(updated_exchange.rate)
         await CurrencyExchangeCRUD.update_one_by_user(
             user_id, exchange_id, updated_exchange
         )
@@ -65,7 +68,11 @@ class CurrencyExchangeController:
         return CurrencyExchange(
             from_currency_id=exchange_schema.from_currency_id,
             to_currency_id=exchange_schema.to_currency_id,
-            rate=exchange_schema.rate,
+            rate=(
+                Decimal(str(exchange_schema.rate))
+                if exchange_schema.rate is not None
+                else None
+            ),
             date=exchange_schema.date,
         )
 

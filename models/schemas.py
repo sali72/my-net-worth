@@ -200,6 +200,7 @@ class AssetTypeUpdateSchema(BaseModel):
 
 class AssetCreateSchema(BaseModel):
     asset_type_id: Optional[str] = Field(None, example="asset_type_id_123")
+    currency_id: str = Field(..., example="currency_id_123")
     name: str = Field(..., max_length=50, example="Family Home")
     description: Optional[str] = Field(
         None, max_length=255, example="A beautiful house in the suburbs"
@@ -212,6 +213,7 @@ class AssetCreateSchema(BaseModel):
 
 class AssetUpdateSchema(BaseModel):
     asset_type_id: Optional[str] = Field(None, example="asset_type_id_123")
+    currency_id: Optional[str] = Field(None, example="currency_id_123")
     name: Optional[str] = Field(None, max_length=50, example="Family Home")
     description: Optional[str] = Field(
         None, max_length=255, example="A beautiful house in the suburbs"

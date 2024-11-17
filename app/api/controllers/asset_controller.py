@@ -1,7 +1,11 @@
+from decimal import Decimal
 from typing import List
+
 from app.crud.asset_crud import AssetCRUD
 from app.crud.asset_type_crud import AssetTypeCRUD
-from models.models import Asset, User
+from app.crud.currency_crud import CurrencyCRUD
+from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
+from models.models import Asset, Currency, User
 from models.schemas import AssetCreateSchema, AssetUpdateSchema
 
 
@@ -29,6 +33,17 @@ class AssetController:
         return Asset(
             user_id=user_id,
             asset_type_id=asset_schema.asset_type_id,
+            currency_id=asset_schema.currency_id,
+            name=asset_schema.name,
+            description=asset_schema.description,
+            value=asset_schema.value,
+        )
+
+    @classmethod
+    def _create_asset_obj_for_update(cls, asset_schema: AssetUpdateSchema) -> Asset:
+        return Asset(
+            asset_type_id=asset_schema.asset_type_id,
+            currency_id=asset_schema.currency_id,
             name=asset_schema.name,
             description=asset_schema.description,
             value=asset_schema.value,
@@ -56,15 +71,6 @@ class AssetController:
         return asset_from_db.to_dict()
 
     @classmethod
-    def _create_asset_obj_for_update(cls, asset_schema: AssetUpdateSchema) -> Asset:
-        return Asset(
-            asset_type_id=asset_schema.asset_type_id,
-            name=asset_schema.name,
-            description=asset_schema.description,
-            value=asset_schema.value,
-        )
-
-    @classmethod
     async def delete_asset(cls, asset_id: str, user_id: str) -> bool:
         asset = await AssetCRUD.get_one_by_user(asset_id, user_id)
         await AssetCRUD.delete_one_by_user(asset_id, user_id)
@@ -72,6 +78,29 @@ class AssetController:
 
     @classmethod
     async def calculate_total_asset_value(cls, user_id: str) -> float:
-        assets: List[Asset] = await AssetCRUD.get_all_by_user_id(user_id)
-        total_value = sum(asset.value for asset in assets)
-        return total_value
+        all_user_assets = await AssetCRUD.get_all_by_user_id(user_id)
+        base_currency = await CurrencyCRUD.get_base_currency(user_id)
+
+        total_value = Decimal(0)
+        for asset in all_user_assets:
+            total_value += await cls._calculate_asset_value(asset, base_currency)
+
+        return float(total_value)
+
+    @classmethod
+    async def _calculate_asset_value(
+        cls, asset: Asset, base_currency: Currency
+    ) -> Decimal:
+        if asset.currency_id == base_currency.id:
+            return asset.value
+        else:
+            return await cls._convert_to_base_currency(asset, base_currency)
+
+    @classmethod
+    async def _convert_to_base_currency(
+        cls, asset: Asset, base_currency: Currency
+    ) -> Decimal:
+        exchange = await CurrencyExchangeCRUD.get_one_by_currencies(
+            asset.currency_id, base_currency.id
+        )
+        return asset.value * exchange.rate

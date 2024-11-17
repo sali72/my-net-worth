@@ -34,6 +34,8 @@ class AssetCRUD:
     def _update_asset_fields(asset: Asset, updated_asset: Asset):
         if updated_asset.asset_type_id is not None:
             asset.asset_type_id = updated_asset.asset_type_id
+        if updated_asset.currency_id is not None:
+            asset.currency_id = updated_asset.currency_id
         if updated_asset.name is not None:
             asset.name = updated_asset.name
         if updated_asset.description is not None:
@@ -53,3 +55,8 @@ class AssetCRUD:
                 f"Asset with id {asset_id} for user {user_id} does not exist"
             )
         return result > 0
+
+    @classmethod
+    async def update_asset_value_with_exchange_rate(cls, asset: Asset, exchange_rate: float) -> None:
+        asset.value *= exchange_rate
+        asset.save()

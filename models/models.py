@@ -170,7 +170,7 @@ class Transaction(BaseDocument):
     category_id = ReferenceField("Category", required=False)
     currency_id = ReferenceField("Currency", required=True)
     type = StringField(required=True, choices=["income", "expense", "transfer"])
-    amount = DecimalField(required=True, precision=2)
+    amount = DecimalField(required=True)
     date = DateTimeField(default=datetime.utcnow)
     description = StringField(max_length=255)
 
@@ -242,7 +242,7 @@ class Asset(BaseDocument):
     currency_id = ReferenceField(Currency, required=True)
     name = StringField(required=True, max_length=50)
     description = StringField(required=False, max_length=255)
-    value = DecimalField(required=True, precision=10)
+    value = DecimalField(required=True)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
     meta = {

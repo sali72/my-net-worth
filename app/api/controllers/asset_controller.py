@@ -83,24 +83,26 @@ class AssetController:
 
         total_value = Decimal(0)
         for asset in all_user_assets:
-            total_value += await cls._calculate_asset_value(asset, base_currency)
+            total_value += await cls._calculate_asset_value(
+                asset, base_currency, user_id
+            )
 
         return float(total_value)
 
     @classmethod
     async def _calculate_asset_value(
-        cls, asset: Asset, base_currency: Currency
+        cls, asset: Asset, base_currency: Currency, user_id: str
     ) -> Decimal:
-        if asset.currency_id == base_currency.id:
+        if asset.currency_id.id == base_currency.id:
             return asset.value
         else:
-            return await cls._convert_to_base_currency(asset, base_currency)
+            return await cls._convert_to_base_currency(asset, base_currency, user_id)
 
     @classmethod
     async def _convert_to_base_currency(
-        cls, asset: Asset, base_currency: Currency
+        cls, asset: Asset, base_currency: Currency, user_id: str
     ) -> Decimal:
-        exchange = await CurrencyExchangeCRUD.get_one_by_currencies(
-            asset.currency_id, base_currency.id
+        exchange_rate = await CurrencyExchangeCRUD.get_exchange_rate(
+            user_id, asset.currency_id.id, base_currency.id
         )
-        return asset.value * exchange.rate
+        return asset.value * exchange_rate

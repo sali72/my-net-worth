@@ -1,27 +1,65 @@
+from decimal import Decimal
+
 from mongoengine import DoesNotExist, QuerySet
 
 from models.models import CurrencyExchange
 
 
 class CurrencyExchangeCRUD:
+    @classmethod
+    async def get_exchange_rate(
+        cls, user_id: str, from_currency_id: str, to_currency_id: str
+    ) -> Decimal:
+        direct_rate = await cls._get_direct_exchange_rate(
+            user_id, from_currency_id, to_currency_id
+        )
+        if direct_rate is not None:
+            return direct_rate
+
+        reverse_rate = await cls._get_reverse_exchange_rate(
+            user_id, from_currency_id, to_currency_id
+        )
+        if reverse_rate is not None:
+            return reverse_rate
+        
+        if from_currency_id == to_currency_id:
+            return Decimal("1")
+
+        raise DoesNotExist(
+            f"No exchange rate found for currencies {from_currency_id} and {to_currency_id} for user {user_id}."
+        )
 
     @classmethod
-    async def get_one_by_currencies_and_user(
+    async def _get_direct_exchange_rate(
+        cls, user_id: str, from_currency_id: str, to_currency_id: str
+    ) -> Decimal:
+        direct_exchange = await cls.get_direct_exchange_optional(
+            user_id, from_currency_id, to_currency_id
+        )
+        if direct_exchange:
+            return Decimal(direct_exchange.rate)
+        return None
+
+    @classmethod
+    async def _get_reverse_exchange_rate(
+        cls, user_id: str, from_currency_id: str, to_currency_id: str
+    ) -> Decimal:
+        reverse_exchange = await cls.get_direct_exchange_optional(
+            user_id, to_currency_id, from_currency_id
+        )
+        if reverse_exchange:
+            return Decimal("1") / Decimal(reverse_exchange.rate)
+        return None
+
+    @classmethod
+    async def get_direct_exchange_optional(
         cls, user_id: str, from_currency_id: str, to_currency_id: str
     ) -> CurrencyExchange:
-        return CurrencyExchange.objects.get(
+        return CurrencyExchange.objects(
             user_id=user_id,
             from_currency_id=from_currency_id,
             to_currency_id=to_currency_id,
-        )
-
-    @classmethod
-    async def get_one_by_currencies(
-        cls, from_currency_id: str, to_currency_id: str
-    ) -> CurrencyExchange:
-        return CurrencyExchange.objects.get(
-            from_currency_id=from_currency_id, to_currency_id=to_currency_id
-        )
+        ).first()
 
     @classmethod
     async def create_one(cls, exchange: CurrencyExchange) -> CurrencyExchange:

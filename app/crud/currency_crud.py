@@ -100,3 +100,14 @@ class CurrencyCRUD:
                 f"Currency with id {currency_id} for user {user_id} does not exist"
             )
         return result > 0
+
+    @classmethod
+    async def set_base_currency(cls, currency: Currency) -> Currency:
+        currency.is_base_currency = True
+        currency.save()
+        return currency
+
+    @classmethod
+    async def unset_base_currency(cls, currency: Currency) -> None:
+        currency.is_base_currency = False
+        currency.save()

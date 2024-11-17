@@ -6,6 +6,16 @@ from models.models import CurrencyExchange
 class CurrencyExchangeCRUD:
 
     @classmethod
+    async def get_one_by_currencies_and_user(
+        cls, user_id: str, from_currency_id: str, to_currency_id: str
+    ) -> CurrencyExchange:
+        return CurrencyExchange.objects.get(
+            user_id=user_id,
+            from_currency_id=from_currency_id,
+            to_currency_id=to_currency_id,
+        )
+
+    @classmethod
     async def get_one_by_currencies(
         cls, from_currency_id: str, to_currency_id: str
     ) -> CurrencyExchange:
@@ -55,3 +65,21 @@ class CurrencyExchangeCRUD:
                 f"CurrencyExchange with id {exchange_id} for user {user_id} does not exist"
             )
         return result > 0
+
+    @classmethod
+    async def exchange_rate_exists(
+        cls, user_id: str, from_currency_id: str, to_currency_id: str
+    ) -> bool:
+        # Check if an exchange rate exists in either direction
+        return (
+            CurrencyExchange.objects(
+                user_id=user_id,
+                from_currency_id=from_currency_id,
+                to_currency_id=to_currency_id,
+            ).first()
+            or CurrencyExchange.objects(
+                user_id=user_id,
+                from_currency_id=to_currency_id,
+                to_currency_id=from_currency_id,
+            ).first()
+        )

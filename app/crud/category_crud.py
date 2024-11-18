@@ -1,4 +1,5 @@
-from mongoengine import DoesNotExist, QuerySet
+from mongoengine import DoesNotExist, Q, QuerySet
+
 from models.models import Category
 
 
@@ -11,11 +12,14 @@ class CategoryCRUD:
 
     @classmethod
     async def get_one_by_user(cls, category_id: str, user_id: str) -> Category:
-        return Category.objects.get(id=category_id, user_id=user_id)
+        return Category.objects.get(
+            (Q(id=category_id) & Q(user_id=user_id))
+            | Q(id=category_id, is_predefined=True)
+        )
 
     @classmethod
     async def get_all_by_user_id(cls, user_id: str) -> QuerySet:
-        return Category.objects(user_id=user_id)
+        return Category.objects(Q(is_predefined=True) | Q(user_id=user_id))
 
     @classmethod
     async def update_one_by_user(

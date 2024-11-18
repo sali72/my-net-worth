@@ -1,4 +1,4 @@
-from mongoengine import DoesNotExist, QuerySet
+from mongoengine import DoesNotExist, QuerySet, Q
 from models.models import AssetType
 from datetime import datetime
 
@@ -13,11 +13,14 @@ class AssetTypeCRUD:
 
     @classmethod
     async def get_one_by_user(cls, asset_type_id: str, user_id: str) -> AssetType:
-        return AssetType.objects.get(id=asset_type_id, user_id=user_id)
+        return AssetType.objects.get(
+            (Q(id=asset_type_id) & Q(user_id=user_id))
+            | Q(id=asset_type_id, is_predefined=True)
+        )
 
     @classmethod
     async def get_all_by_user_id(cls, user_id: str) -> QuerySet:
-        asset_types = AssetType.objects(user_id=user_id)
+        asset_types = AssetType.objects(Q(is_predefined=True) | Q(user_id=user_id))
         return asset_types
 
     @classmethod

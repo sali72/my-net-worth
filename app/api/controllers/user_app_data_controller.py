@@ -81,3 +81,9 @@ class UserAppDataController:
         cls, user_app_data: UserAppData, currency: Currency
     ) -> Currency:
         return await UserAppDataCRUD.set_base_currency(user_app_data, currency)
+
+    @classmethod
+    async def update_user_app_data_net_worth(cls, user, net_worth):
+        user_app_data: UserAppData = user.user_app_data
+        user_app_data.net_worth = net_worth
+        await UserAppDataCRUD.update_one_by_id(user.user_app_data.id, user_app_data)

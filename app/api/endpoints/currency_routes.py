@@ -13,6 +13,15 @@ from models.schemas import Role as R
 router = APIRouter(prefix="/currencies", tags=["Currency"])
 
 
+@router.get("/predefined", response_model=ResponseSchema)
+async def read_predefined_currencies_route():
+    currencies = await CurrencyController.get_predefined_currencies()
+    return ResponseSchema(
+        data={"currencies": currencies},
+        message="Predefined currencies retrieved successfully",
+    )
+
+
 @router.post(
     "",
     responses={

@@ -34,6 +34,10 @@ class CurrencyCRUD:
         return Currency.objects(Q(is_predefined=True) | Q(user_id=user_id))
 
     @classmethod
+    async def get_all_predefined(cls) -> QuerySet:
+        return Currency.objects(is_predefined=True)
+
+    @classmethod
     async def update_one_by_user(
         cls, user_id: str, currency_id: str, updated_currency: Currency
     ):

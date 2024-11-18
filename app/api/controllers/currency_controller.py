@@ -93,7 +93,7 @@ class CurrencyController:
         await cls._validate_exchange_rates(
             user.id, current_base_currency, currency_to_set
         )
-        
+
         updated_currency = await cls._set_new_base_currency(
             user.user_app_data, currency_to_set
         )
@@ -111,7 +111,7 @@ class CurrencyController:
         current_base_currency = await CurrencyCRUD.get_one_by_user(
             current_base_currency_id, user.id
         )
-        
+
         return current_base_currency
 
     @classmethod
@@ -161,3 +161,8 @@ class CurrencyController:
         cls, user_app_data: UserAppData, currency: Currency
     ) -> Currency:
         return await UserAppDataCRUD.set_base_currency(user_app_data, currency)
+
+    @classmethod
+    async def get_predefined_currencies(cls) -> List[dict]:
+        predefined_currencies: List[Currency] = await CurrencyCRUD.get_all_predefined()
+        return [currency.to_dict() for currency in predefined_currencies]

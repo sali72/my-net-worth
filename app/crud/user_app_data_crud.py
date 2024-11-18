@@ -1,6 +1,6 @@
 from models.models import UserAppData
 from bson import ObjectId
-from pymongo.errors import DoesNotExist
+
 
 
 class UserAppDataCRUD:

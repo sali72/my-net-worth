@@ -12,7 +12,8 @@ from passlib.context import CryptContext
 from zxcvbn import zxcvbn
 
 from app.crud.user_crud import UserCRUD
-from models.models import User
+from app.crud.user_app_data_crud import UserAppDataCRUD
+from models.models import User, UserAppData
 from models.schemas import UserSchema, Role
 
 load_dotenv()
@@ -48,19 +49,30 @@ class AuthController:
         # await cls.__check_password_strength(user_schema.password, user_schema.username)
         hashed_password = cls.pwd_context.hash(user_schema.password)
 
-        user_model = cls.__create_user_model(user_schema, hashed_password)
-        await cls.user_crud.create_one(user_model)
+        await cls.__create_user_model_atomic(user_schema, hashed_password)
 
         return await cls.login_user(user_schema.username, user_schema.password)
 
     @classmethod
-    def __create_user_model(cls, user_schema: UserSchema, hashed_password):
-        return User(
-            username=user_schema.username,
-            hashed_password=hashed_password,
-            email=user_schema.email,
-            role=Role.USER.value,
-        )
+    async def __create_user_model_atomic(cls, user_schema: UserSchema, hashed_password):
+        user_app_data = UserAppData(base_currency_id=user_schema.base_currency_id)
+
+        user_app_data_in_db =await UserAppDataCRUD.create_one(user_app_data)
+        try:
+            user_model = User(
+                username=user_schema.username,
+                hashed_password=hashed_password,
+                email=user_schema.email,
+                role=Role.USER.value,
+                user_app_data=user_app_data,
+            )
+            await cls.user_crud.create_one(user_model)
+        except Exception as e:
+            await UserAppDataCRUD.delete_one(user_app_data_in_db)
+            raise e
+        
+        
+        
 
     @classmethod
     async def __check_password_strength(cls, password, username):

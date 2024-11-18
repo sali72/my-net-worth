@@ -99,7 +99,7 @@ class CurrencyController:
         # Set the new base currency
         updated_currency = await cls._set_new_base_currency(currency_to_set)
 
-        # # Update asset values if the user wants to
+        # #TODO Update asset values if the user wants to
         # await AssetController.update_asset_values(
         #     user_id, current_base_currency, currency_to_set
         # )

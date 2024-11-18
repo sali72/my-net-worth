@@ -60,6 +60,15 @@ class BaseDocument(Document):
         return value_dict
 
 
+class UserAppData(BaseDocument):
+    base_currency_id = LazyReferenceField("Currency", required=True)
+    net_worth = DecimalField(min_value=0, precision=PRECISION_LIMIT_IN_DB)
+    assets_value = DecimalField(min_value=0, precision=PRECISION_LIMIT_IN_DB)
+    wallets_value = DecimalField(min_value=0, precision=PRECISION_LIMIT_IN_DB)
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+
 class User(BaseDocument):
     name = StringField(required=False, max_length=50)
     username = StringField(required=True, unique=True)
@@ -68,6 +77,7 @@ class User(BaseDocument):
     role = StringField(required=True, choices=["user", "admin"])
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
+    user_app_data = ReferenceField("UserAppData", reverse_delete_rule=4)
 
 
 class Currency(BaseDocument):
@@ -76,7 +86,6 @@ class Currency(BaseDocument):
     name = StringField(required=True, max_length=50)
     symbol = StringField(required=True, max_length=5)
     is_predefined = BooleanField(default=False)
-    is_base_currency = BooleanField(default=False)
     currency_type = StringField(required=True, choices=["fiat", "crypto"])
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
@@ -96,19 +105,6 @@ class Currency(BaseDocument):
             },
         ]
     }
-
-    def save(self, *args, **kwargs):
-        if self.is_base_currency:
-            # Check if there is already a base currency for this user
-            existing_base_currency = Currency.objects(
-                user_id=self.user_id, is_base_currency=True
-            ).first()
-            if existing_base_currency and existing_base_currency.id != self.id:
-                raise ValidationError(
-                    "Only one currency can be the base currency for each user."
-                )
-
-        return super(Currency, self).save(*args, **kwargs)
 
 
 class CurrencyBalance(EmbeddedDocument):

@@ -47,6 +47,7 @@ class UserSchema(BaseModel):
     username: str = Field(None, example="johndoe")
     email: EmailStr = Field(None, example="johndoe@example.com")
     password: str = Field(None, example="strongpassword123")
+    base_currency_id: str = Field(..., example="currency_id_123")
 
 
 class CurrencyBalanceSchema(BaseModel):

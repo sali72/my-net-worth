@@ -78,7 +78,7 @@ async def set_base_currency_by_id_route(
     currency_id: str = Path(..., description="The ID of the currency to set as base"),
     user=Depends(has_role(R.USER)),
 ):
-    result = await CurrencyController.set_base_currency_by_id(user.id, currency_id)
+    result = await CurrencyController.set_base_currency_by_id(user, currency_id)
     return ResponseSchema(
         data=result,
         message="Base currency set successfully",

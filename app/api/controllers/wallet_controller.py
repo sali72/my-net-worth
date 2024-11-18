@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
 from app.crud.wallet_crud import WalletCRUD
+from app.crud.user_app_data_crud import UserAppDataCRUD
 from models.models import Currency, CurrencyBalance, User, Wallet
 from models.schemas import CurrencyBalanceSchema, WalletCreateSchema, WalletUpdateSchema
 
@@ -101,14 +102,17 @@ class WalletController:
         return True
 
     @classmethod
-    async def calculate_total_wallet_value(cls, user_id: str) -> Decimal:
-        wallets = await cls._get_user_wallets(user_id)
-        base_currency = await CurrencyCRUD.get_base_currency(user_id)
+    async def calculate_total_wallet_value(cls, user: User) -> Decimal:
+        wallets = await cls._get_user_wallets(user.id)
 
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id(
+            user.user_app_data.id
+        )
+        
         total_value = Decimal(0)
         for wallet in wallets:
             total_value += await cls._calculate_wallet_value(
-                wallet, base_currency, user_id
+                wallet, base_currency_id, user.id
             )
 
         return total_value
@@ -119,32 +123,32 @@ class WalletController:
 
     @classmethod
     async def _calculate_wallet_value(
-        cls, wallet: Wallet, base_currency: Currency, user_id: str
+        cls, wallet: Wallet, base_currency_id: str, user_id: str
     ) -> Decimal:
         total_value = Decimal(0)
         for balance in wallet.currency_balances:
             total_value += await cls._calculate_balance_value(
-                balance, base_currency, user_id
+                balance, base_currency_id, user_id
             )
         return total_value
 
     @classmethod
     async def _calculate_balance_value(
-        cls, balance, base_currency: Currency, user_id: str
+        cls, balance, base_currency_id: str, user_id: str
     ) -> Decimal:
         currency = await CurrencyCRUD.get_one_by_id(balance.currency_id.id)
         return await cls._convert_to_base_currency(
-            balance, currency, base_currency, user_id
+            balance, currency, base_currency_id, user_id
         )
 
     @classmethod
     async def _convert_to_base_currency(
-        cls, balance, currency: Currency, base_currency: Currency, user_id: str
+        cls, balance, currency: Currency, base_currency_id: str, user_id: str
     ) -> Decimal:
-        if currency.id == base_currency.id:
+        if currency.id == base_currency_id:
             return balance.balance
 
         exchange_rate = await CurrencyExchangeCRUD.get_exchange_rate(
-            user_id, currency.id, base_currency.id
+            user_id, currency.id, base_currency_id
         )
         return balance.balance * exchange_rate

@@ -6,7 +6,8 @@ from app.api.controllers.asset_controller import AssetController
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
 from app.crud.wallet_crud import WalletCRUD
-from models.models import Currency, User
+from app.crud.user_app_data_crud import UserAppDataCRUD
+from models.models import Currency, User, UserAppData
 from models.schemas import CurrencyCreateSchema, CurrencyUpdateSchema
 
 
@@ -83,21 +84,19 @@ class CurrencyController:
         return True
 
     @classmethod
-    async def set_base_currency_by_id(cls, user_id: str, currency_id: str) -> dict:
-        current_base_currency = await cls._get_current_base_currency(user_id)
-        currency_to_set = await cls._retrieve_currency_to_set(user_id, currency_id)
+    async def set_base_currency_by_id(cls, user: User, currency_id: str) -> dict:
+        current_base_currency = await cls._get_base_currency(user)
+
+        currency_to_set = await cls._retrieve_currency_to_set(user.id, currency_id)
 
         # Check for necessary exchange rates
         await cls._validate_exchange_rates(
-            user_id, current_base_currency, currency_to_set
+            user.id, current_base_currency, currency_to_set
         )
-
-        # Unset the current base currency
-        if current_base_currency:
-            await CurrencyCRUD.unset_base_currency(current_base_currency)
-
-        # Set the new base currency
-        updated_currency = await cls._set_new_base_currency(currency_to_set)
+        
+        updated_currency = await cls._set_new_base_currency(
+            user.user_app_data, currency_to_set
+        )
 
         # #TODO Update asset values if the user wants to
         # await AssetController.update_asset_values(
@@ -107,11 +106,13 @@ class CurrencyController:
         return updated_currency.to_dict()
 
     @classmethod
-    async def _get_current_base_currency(cls, user_id: str) -> Currency:
-        try:
-            return await CurrencyCRUD.get_base_currency(user_id)
-        except DoesNotExist:
-            return None
+    async def _get_base_currency(cls, user):
+        current_base_currency_id = user.user_app_data.base_currency_id.pk
+        current_base_currency = await CurrencyCRUD.get_one_by_user(
+            current_base_currency_id, user.id
+        )
+        
+        return current_base_currency
 
     @classmethod
     async def _retrieve_currency_to_set(
@@ -139,7 +140,8 @@ class CurrencyController:
                 user_id, currency_id, new_base_currency.id
             ):
                 raise ValidationError(
-                    f"Missing exchange rate for currency {currency_id} to new base currency {new_base_currency.id}"
+                    f"Missing exchange rate for currency\
+                        {currency_id} to new base currency {new_base_currency.id}"
                 )
 
         # Check for exchange rates between the current and new base currencies
@@ -150,9 +152,12 @@ class CurrencyController:
             )
         ):
             raise ValidationError(
-                f"Missing exchange rate between current base currency {current_base_currency.id} and new base currency {new_base_currency.id}"
+                f"Missing exchange rate between current base currency\
+                    {current_base_currency.id} and new base currency {new_base_currency.id}"
             )
 
     @classmethod
-    async def _set_new_base_currency(cls, currency: Currency) -> Currency:
-        return await CurrencyCRUD.set_base_currency(currency)
+    async def _set_new_base_currency(
+        cls, user_app_data: UserAppData, currency: Currency
+    ) -> Currency:
+        return await UserAppDataCRUD.set_base_currency(user_app_data, currency)

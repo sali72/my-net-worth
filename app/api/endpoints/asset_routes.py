@@ -31,7 +31,7 @@ async def create_asset_route(
 
 @router.get("/total-value", response_model=ResponseSchema)
 async def calculate_total_asset_value_route(user=Depends(has_role(R.USER))):
-    total_value = await AssetController.calculate_total_asset_value(user.id)
+    total_value = await AssetController.calculate_total_asset_value(user)
     return ResponseSchema(
         data={"total_value": total_value},
         message="Total asset value calculated successfully",

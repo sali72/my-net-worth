@@ -30,7 +30,7 @@ async def create_wallet_route(
 
 @router.get("/total-value", response_model=ResponseSchema)
 async def calculate_total_wallet_value_route(user=Depends(has_role(R.USER))):
-    total_value = await WalletController.calculate_total_wallet_value(user.id)
+    total_value = await WalletController.calculate_total_wallet_value(user)
     return ResponseSchema(
         data={"total_value": total_value},
         message="Total wallet value calculated successfully",

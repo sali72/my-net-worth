@@ -1,7 +1,7 @@
 from typing import List
 
 from bson import ObjectId
-from mongoengine import DoesNotExist, QuerySet
+from mongoengine import DoesNotExist, QuerySet, Q
 
 from models.models import Currency
 
@@ -19,7 +19,10 @@ class CurrencyCRUD:
 
     @classmethod
     async def get_one_by_user(cls, currency_id: str, user_id: str) -> Currency:
-        return Currency.objects.get(id=currency_id, user_id=user_id)
+        return Currency.objects.get(
+            (Q(id=currency_id) & Q(user_id=user_id))
+            | Q(id=currency_id, is_predefined=True)
+        )
 
     @classmethod
     async def get_all_by_user_id(cls, user_id: str) -> QuerySet:
@@ -70,10 +73,6 @@ class CurrencyCRUD:
         return list(currencies)
 
     @classmethod
-    async def get_base_currency(cls, user_id: str) -> Currency:
-        return Currency.objects.get(user_id=user_id, is_base_currency=True)
-
-    @classmethod
     async def update_one_by_user(
         cls, user_id: str, currency_id: str, updated_currency: Currency
     ):
@@ -100,14 +99,3 @@ class CurrencyCRUD:
                 f"Currency with id {currency_id} for user {user_id} does not exist"
             )
         return result > 0
-
-    @classmethod
-    async def set_base_currency(cls, currency: Currency) -> Currency:
-        currency.is_base_currency = True
-        currency.save()
-        return currency
-
-    @classmethod
-    async def unset_base_currency(cls, currency: Currency) -> None:
-        currency.is_base_currency = False
-        currency.save()

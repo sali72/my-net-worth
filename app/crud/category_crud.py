@@ -7,6 +7,7 @@ class CategoryCRUD:
 
     @classmethod
     async def create_one(cls, category: Category) -> Category:
+        category.clean()
         category.save()
         return category
 
@@ -16,6 +17,12 @@ class CategoryCRUD:
             (Q(id=category_id) & Q(user_id=user_id))
             | Q(id=category_id, is_predefined=True)
         )
+        
+    @staticmethod
+    async def get_one_by_user_and_name_optional(name: str, user_id: str) -> Category:
+        return Category.objects(
+            (Q(name=name) & Q(user_id=user_id)) | Q(name=name, is_predefined=True)
+        ).first()
 
     @classmethod
     async def get_all_by_user_id(cls, user_id: str) -> QuerySet:
@@ -27,6 +34,7 @@ class CategoryCRUD:
     ):
         category = await cls.get_one_by_user(category_id, user_id)
         cls.__update_category_fields(category, updated_category)
+        category.clean()
         category.save()
 
     @staticmethod

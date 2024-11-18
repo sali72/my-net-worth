@@ -14,17 +14,27 @@ from app.api.endpoints.transaction_routes import router as transaction_routes
 from app.api.endpoints.wallet_routes import router as wallet_routes
 from commons.exception_handlers import base_exception_handler, http_exception_handler
 from database.database import connect_to_db
+from database.initialize_db import (
+    initialize_fiat_and_crypto_currencies,
+    initialize_common_asset_types,
+    initialize_common_categories,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     connect_to_db()
+    # await initialize_fiat_and_crypto_currencies()
+    # await initialize_common_asset_types()
+    # await initialize_common_categories()
+
     yield
 
 
 app = FastAPI(
     title="My-net-worth app API",
-    description="This app is a personal financial app that helps you manage your money better",
+    description="This app is a personal financial app \
+        that helps you manage your money better",
     lifespan=lifespan,
 )
 

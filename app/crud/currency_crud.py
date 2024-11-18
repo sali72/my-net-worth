@@ -8,6 +8,7 @@ class CurrencyCRUD:
 
     @classmethod
     async def create_one(cls, currency: Currency) -> Currency:
+        currency.clean()
         currency.save()
         return currency
 
@@ -22,6 +23,12 @@ class CurrencyCRUD:
             | Q(id=currency_id, is_predefined=True)
         )
 
+    @staticmethod
+    async def get_one_by_user_and_code_optional(code: str, user_id: str) -> Currency:
+        return Currency.objects(
+            (Q(code=code) & Q(user_id=user_id)) | Q(code=code, is_predefined=True)
+        ).first()
+
     @classmethod
     async def get_all_by_user_id(cls, user_id: str) -> QuerySet:
         return Currency.objects(Q(is_predefined=True) | Q(user_id=user_id))
@@ -32,6 +39,7 @@ class CurrencyCRUD:
     ):
         currency = await cls.get_one_by_user(currency_id, user_id)
         cls.__update_currency_fields(currency, updated_currency)
+        currency.clean()
         currency.save()
 
     @classmethod

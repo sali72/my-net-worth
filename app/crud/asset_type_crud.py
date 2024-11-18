@@ -17,6 +17,12 @@ class AssetTypeCRUD:
             (Q(id=asset_type_id) & Q(user_id=user_id))
             | Q(id=asset_type_id, is_predefined=True)
         )
+        
+    @staticmethod
+    async def get_one_by_user_and_name_optional(name: str, user_id: str) -> AssetType:
+        return AssetType.objects(
+            (Q(name=name) & Q(user_id=user_id)) | Q(name=name, is_predefined=True)
+        ).first()
 
     @classmethod
     async def get_all_by_user_id(cls, user_id: str) -> QuerySet:

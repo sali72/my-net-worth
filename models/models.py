@@ -81,7 +81,7 @@ class User(BaseDocument):
 
 
 class Currency(BaseDocument):
-    user_id = ReferenceField("User", required=True)
+    user_id = ReferenceField("User", required=False)
     code = StringField(required=True, max_length=3)
     name = StringField(required=True, max_length=50)
     symbol = StringField(required=True, max_length=5)
@@ -91,20 +91,15 @@ class Currency(BaseDocument):
     updated_at = DateTimeField(default=datetime.utcnow)
     meta = {
         "indexes": [
-            {
-                "fields": ("user_id", "code"),
-                "unique": True,
-            },
-            {
-                "fields": ("user_id", "name"),
-                "unique": True,
-            },
-            {
-                "fields": ("user_id", "symbol"),
-                "unique": True,
-            },
+            {"fields": ("user_id", "code"), "unique": True},
+            {"fields": ("user_id", "name"), "unique": True},
+            {"fields": ("user_id", "symbol"), "unique": True},
         ]
     }
+
+    def clean(self):
+        if not self.is_predefined and not self.user_id:
+            raise ValidationError("user_id is required for non-predefined currencies.")
 
 
 class CurrencyBalance(EmbeddedDocument):
@@ -204,34 +199,36 @@ class Transaction(BaseDocument):
 
 
 class Category(BaseDocument):
-    user_id = ReferenceField(User, required=True)
+    user_id = ReferenceField(User, required=False)
     name = StringField(required=True, max_length=50)
     type = StringField(required=True, choices=["income", "expense", "transfer"])
     description = StringField(max_length=255)
     is_predefined = BooleanField(default=False)
     meta = {
         "indexes": [
-            {
-                "fields": ("user_id", "name"),
-                "unique": True,
-            }
+            {"fields": ("user_id", "name"), "unique": True},
         ]
     }
 
+    def clean(self):
+        if not self.is_predefined and not self.user_id:
+            raise ValidationError("user_id is required for non-predefined categories.")
+
 
 class AssetType(BaseDocument):
-    user_id = ReferenceField(User, required=True)
+    user_id = ReferenceField(User, required=False)
     name = StringField(required=True, max_length=50)
     description = StringField(required=False, max_length=255)
     is_predefined = BooleanField(default=False)
     meta = {
         "indexes": [
-            {
-                "fields": ("user_id", "name"),
-                "unique": True,
-            }
+            {"fields": ("user_id", "name"), "unique": True},
         ]
     }
+
+    def clean(self):
+        if not self.is_predefined and not self.user_id:
+            raise ValidationError("user_id is required for non-predefined asset types.")
 
 
 class Asset(BaseDocument):

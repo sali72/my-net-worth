@@ -1,7 +1,5 @@
-from typing import List
 from mongoengine import ValidationError
 
-from app.api.controllers.asset_controller import AssetController
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
 from app.crud.wallet_crud import WalletCRUD
@@ -10,9 +8,8 @@ from models.models import Currency, User, UserAppData
 
 
 class UserAppDataController:
-
     @classmethod
-    async def set_base_currency_by_id(cls, user: User, currency_id: str) -> dict:
+    async def change_base_currency_by_id(cls, user: User, currency_id: str) -> dict:
         current_base_currency = await cls._get_base_currency(user)
 
         currency_to_set = await cls._retrieve_currency_to_set(user.id, currency_id)
@@ -25,11 +22,6 @@ class UserAppDataController:
         updated_currency = await cls._set_new_base_currency(
             user.user_app_data, currency_to_set
         )
-
-        # #TODO Update asset values if the user wants to
-        # await AssetController.update_asset_values(
-        #     user_id, current_base_currency, currency_to_set
-        # )
 
         return updated_currency.to_dict()
 

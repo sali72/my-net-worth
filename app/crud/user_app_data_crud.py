@@ -1,6 +1,8 @@
-from models.models import UserAppData
+from datetime import datetime
+
 from bson import ObjectId
 
+from models.models import UserAppData
 
 
 class UserAppDataCRUD:
@@ -36,3 +38,30 @@ class UserAppDataCRUD:
         user_app_data.base_currency_id = ObjectId(currency_id)
         user_app_data.save()
         return user_app_data
+
+    @classmethod
+    async def update_one_by_id(
+        cls, current_user_app_data_id: str, updated_user_app_data: UserAppData
+    ) -> UserAppData:
+        user_app_data = await cls.get_one_by_id(current_user_app_data_id)
+        cls.__update_user_app_data_fields(user_app_data, updated_user_app_data)
+        cls.__update_timestamp(user_app_data)
+        user_app_data.save()
+        return user_app_data
+
+    @staticmethod
+    def __update_user_app_data_fields(
+        user_app_data: UserAppData, updated_user_app_data: UserAppData
+    ):
+        if updated_user_app_data.base_currency_id is not None:
+            user_app_data.base_currency_id = updated_user_app_data.base_currency_id
+        if updated_user_app_data.net_worth is not None:
+            user_app_data.net_worth = updated_user_app_data.net_worth
+        if updated_user_app_data.assets_value is not None:
+            user_app_data.assets_value = updated_user_app_data.assets_value
+        if updated_user_app_data.wallets_value is not None:
+            user_app_data.wallets_value = updated_user_app_data.wallets_value
+
+    @staticmethod
+    def __update_timestamp(user_app_data: UserAppData):
+        user_app_data.updated_at = datetime.utcnow()

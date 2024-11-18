@@ -7,7 +7,7 @@ from app.crud.currency_crud import CurrencyCRUD
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
 from app.crud.wallet_crud import WalletCRUD
 from app.crud.user_app_data_crud import UserAppDataCRUD
-from models.models import Currency, CurrencyBalance, User, Wallet
+from models.models import Currency, CurrencyBalance, User, Wallet, UserAppData
 from models.schemas import CurrencyBalanceSchema, WalletCreateSchema, WalletUpdateSchema
 
 
@@ -108,14 +108,22 @@ class WalletController:
         base_currency_id = await UserAppDataCRUD.get_base_currency_id(
             user.user_app_data.id
         )
-        
+
         total_value = Decimal(0)
         for wallet in wallets:
             total_value += await cls._calculate_wallet_value(
                 wallet, base_currency_id, user.id
             )
 
+        await cls._update_user_app_data_wallets_value(user, total_value)
+
         return total_value
+
+    @classmethod
+    async def _update_user_app_data_wallets_value(cls, user, total_value):
+        user_app_data: UserAppData = user.user_app_data
+        user_app_data.wallets_value = total_value
+        await UserAppDataCRUD.update_one_by_id(user.user_app_data.id, user_app_data)
 
     @classmethod
     async def _get_user_wallets(cls, user_id: str) -> List[Wallet]:

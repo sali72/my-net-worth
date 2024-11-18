@@ -5,7 +5,8 @@ from app.crud.asset_crud import AssetCRUD
 from app.crud.asset_type_crud import AssetTypeCRUD
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
-from models.models import Asset, Currency, User
+from app.crud.user_app_data_crud import UserAppDataCRUD
+from models.models import Asset, Currency, User, UserAppData
 from models.schemas import AssetCreateSchema, AssetUpdateSchema
 
 
@@ -80,25 +81,30 @@ class AssetController:
     @classmethod
     async def calculate_total_asset_value(cls, user: User) -> Decimal:
         all_user_assets = await AssetCRUD.get_all_by_user_id(user.id)
-        
+
         base_currency = await cls._get_base_currency(user)
-        
 
         total_value = Decimal(0)
         for asset in all_user_assets:
             total_value += await cls._calculate_asset_value(
                 asset, base_currency, user.id
             )
+            
+        await cls._update_user_app_data_assets_value(user, total_value)
 
         return total_value
 
     @classmethod
+    async def _update_user_app_data_assets_value(cls, user, total_value):
+        user_app_data: UserAppData = user.user_app_data
+        user_app_data.assets_value = total_value
+        await UserAppDataCRUD.update_one_by_id(user.user_app_data.id, user_app_data)
+
+    @classmethod
     async def _get_base_currency(cls, user):
         base_currency_id = user.user_app_data.base_currency_id.pk
-        base_currency = await CurrencyCRUD.get_one_by_user(
-            base_currency_id, user.id
-        )
-        
+        base_currency = await CurrencyCRUD.get_one_by_user(base_currency_id, user.id)
+
         return base_currency
 
     @classmethod

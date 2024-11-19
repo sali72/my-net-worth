@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import List, Optional, Tuple
+from decimal import Decimal
+from typing import Dict, List, Optional, Tuple
 
 from mongoengine import ValidationError
 
@@ -33,7 +34,8 @@ class TransactionController:
     async def _validate_transaction_data(
         cls, transaction_schema: TransactionCreateSchema, user_id
     ) -> None:
-        await CategoryCRUD.get_one_by_user(transaction_schema.category_id, user_id)
+        if transaction_schema.category_id:
+            await CategoryCRUD.get_one_by_user(transaction_schema.category_id, user_id)
         await CurrencyCRUD.get_one_by_user(transaction_schema.currency_id, user_id)
 
     @classmethod
@@ -222,11 +224,20 @@ class TransactionController:
         updated_transaction = cls._create_transaction_obj_for_update(
             transaction_update_schema
         )
-        amount_difference = updated_transaction.amount - existing_transaction.amount
 
         await TransactionCRUD.update_one_by_user(
             user_id, transaction_id, updated_transaction
         )
+        
+        if updated_transaction.amount:
+            await cls._adjust_wallet_balances_for_update(transaction_id, user_id, existing_transaction, updated_transaction)
+
+        transaction_from_db = await TransactionCRUD.get_one_by_id(transaction_id)
+        return transaction_from_db.to_dict()
+
+    @classmethod
+    async def _adjust_wallet_balances_for_update(cls, transaction_id, user_id, existing_transaction, updated_transaction):
+        amount_difference = updated_transaction.amount - existing_transaction.amount
 
         if amount_difference != 0:
             try:
@@ -240,9 +251,6 @@ class TransactionController:
                     user_id, transaction_id, existing_transaction
                 )
                 raise e
-
-        transaction_from_db = await TransactionCRUD.get_one_by_id(transaction_id)
-        return transaction_from_db.to_dict()
 
     @classmethod
     def _create_transaction_obj_for_update(

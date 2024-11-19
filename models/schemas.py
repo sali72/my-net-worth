@@ -201,7 +201,6 @@ class TransactionBaseSchema(BaseModel):
 
 
 class TransactionCreateSchema(TransactionBaseSchema):
-    category_id: str = Field(..., example="category_id_123")
     currency_id: str = Field(..., example="currency_id_123")
     type: str = Field(
         ..., choices=["income", "expense", "transfer"], example="transfer"
@@ -265,6 +264,16 @@ class TransactionFilterParams(BaseModel):
             )
 
         return values
+
+class TransactionStatisticsParams(BaseModel):
+    start_date: Optional[datetime] = Query(
+        None,
+        description="Start date for filtering in ISO format (e.g., 2023-10-15T14:30:00Z)",
+    )
+    end_date: Optional[datetime] = Query(
+        None,
+        description="End date for filtering in ISO format (e.g., 2023-10-15T14:30:00Z)",
+    )
 
 
 class CategoryCreateSchema(BaseModel):

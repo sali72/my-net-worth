@@ -9,8 +9,9 @@ from models.schemas import ErrorResponseModel, ResponseSchema
 from models.schemas import Role as R
 from models.schemas import (
     TransactionCreateSchema,
-    TransactionUpdateSchema,
     TransactionFilterParams,
+    TransactionUpdateSchema,
+    TransactionStatisticsParams,
 )
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
@@ -51,6 +52,20 @@ async def filter_transactions_route(
     return ResponseSchema(
         data={"transactions": transactions},
         message="Filtered transactions retrieved successfully",
+    )
+
+
+@router.get("/statistics", response_model=ResponseSchema)
+async def transaction_statistics_route(
+    params: TransactionStatisticsParams = Query(...),
+    user=Depends(has_role(R.USER)),
+):
+    statistics = await TransactionController.calculate_statistics(
+        user.id, params.start_date, params.end_date
+    )
+    return ResponseSchema(
+        data={"statistics": statistics},
+        message="Transaction statistics retrieved successfully",
     )
 
 

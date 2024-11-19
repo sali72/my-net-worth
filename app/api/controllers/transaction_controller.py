@@ -409,3 +409,28 @@ class TransactionController:
         )
 
         return [transaction.to_dict() for transaction in transactions]
+
+    @classmethod
+    async def calculate_statistics(
+        cls, user_id: str, start_date: Optional[datetime], end_date: Optional[datetime]
+    ) -> Dict[str, Decimal]:
+        transactions = await TransactionCRUD.filter_transactions(
+            user_id, start_date, end_date
+        )
+
+        total_income = Decimal(0)
+        total_expense = Decimal(0)
+
+        for transaction in transactions:
+            if transaction.type == "income":
+                total_income += transaction.amount
+            elif transaction.type == "expense":
+                total_expense += transaction.amount
+
+        net_balance = total_income - total_expense
+
+        return {
+            "total_income": total_income,
+            "total_expense": total_expense,
+            "net_balance": net_balance,
+        }

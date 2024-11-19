@@ -86,13 +86,26 @@ class WalletCRUD:
         wallet.currency_balances.append(currency_balance)
         wallet.save()
         return wallet
-    
+
+    @classmethod
+    async def get_currency_balance(
+        cls, user_id: str, wallet_id: str, currency_id: str
+    ) -> CurrencyBalance:
+        wallet = await cls.get_one_by_user(wallet_id, user_id)
+        for balance in wallet.currency_balances:
+            if str(balance.currency_id.pk) == currency_id:
+                return balance
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Currency balance not found in the wallet",
+        )
+
     @classmethod
     async def remove_currency_balance_from_wallet(
         cls, user_id: str, wallet_id: str, currency_id: str
     ) -> Wallet:
         wallet = await cls.get_one_by_user(wallet_id, user_id)
-        
+
         for existing_balance in wallet.currency_balances:
             if str(existing_balance.currency_id.pk) == currency_id:
                 wallet.currency_balances.remove(existing_balance)

@@ -41,6 +41,7 @@ class WalletController:
     ) -> List[CurrencyBalance]:
         currency_balances = []
         for cb in currency_balances_in_schema:
+            # TODO: fix it ,update may not have wallet_currency_type when using this method
             await cls.__validate_currency_and_wallet_type(cb, wallet_currency_type)
             currency_balance = CurrencyBalance(
                 currency_id=cb.currency_id,
@@ -82,6 +83,7 @@ class WalletController:
     async def __create_wallet_obj_for_update(
         cls, wallet_schema: WalletUpdateSchema
     ) -> Wallet:
+        
         if wallet_schema.currency_balances:
             currency_balances = await cls.__create_currency_balance_objs_list(
                 wallet_schema.currency_balances, wallet_schema.type
@@ -103,7 +105,7 @@ class WalletController:
 
     @classmethod
     async def calculate_total_wallet_value(cls, user: User) -> Decimal:
-        wallets = await cls._get_user_wallets(user.id)
+        wallets = await WalletCRUD.get_all_by_user_id_optional(user.id)
 
         base_currency_id = await UserAppDataCRUD.get_base_currency_id(
             user.user_app_data.id
@@ -126,40 +128,27 @@ class WalletController:
         await UserAppDataCRUD.update_one_by_id(user.user_app_data.id, user_app_data)
 
     @classmethod
-    async def _get_user_wallets(cls, user_id: str) -> List[Wallet]:
-        return await WalletCRUD.get_all_by_user_id_optional(user_id)
-
-    @classmethod
     async def _calculate_wallet_value(
         cls, wallet: Wallet, base_currency_id: str, user_id: str
     ) -> Decimal:
         total_value = Decimal(0)
         for balance in wallet.currency_balances:
-            total_value += await cls._calculate_balance_value(
-                balance, base_currency_id, user_id
+            total_value += await cls._convert_balance_value_to_base_currency(
+                balance.balance, balance.currency_id.id, base_currency_id, user_id
             )
         return total_value
 
     @classmethod
-    async def _calculate_balance_value(
-        cls, balance, base_currency_id: str, user_id: str
+    async def _convert_balance_value_to_base_currency(
+        cls, balance: Decimal, currency_id: str, base_currency_id: str, user_id: str
     ) -> Decimal:
-        currency = await CurrencyCRUD.get_one_by_id(balance.currency_id.id)
-        return await cls._convert_to_base_currency(
-            balance, currency, base_currency_id, user_id
-        )
-
-    @classmethod
-    async def _convert_to_base_currency(
-        cls, balance, currency: Currency, base_currency_id: str, user_id: str
-    ) -> Decimal:
-        if currency.id == base_currency_id:
-            return balance.balance
+        if currency_id == base_currency_id:
+            return balance
 
         exchange_rate = await CurrencyExchangeCRUD.get_exchange_rate(
-            user_id, currency.id, base_currency_id
+            user_id, currency_id, base_currency_id
         )
-        return balance.balance * exchange_rate
+        return balance * exchange_rate
 
     @classmethod
     async def add_currency_balance(
@@ -173,14 +162,6 @@ class WalletController:
             user_id, wallet_id, new_balance
         )
         return updated_wallet.to_dict()
-
-    @classmethod
-    def _validate_currency_type(cls, currency_balance, wallet_type):
-        if currency_balance.currency_type != wallet_type:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Wallet type and currency type mismatch",
-            )
 
     @classmethod
     def _check_existing_currency_balance(cls, wallet, currency_balance):
@@ -205,3 +186,46 @@ class WalletController:
         return await WalletCRUD.add_currency_balance_to_wallet(
             user_id, wallet_id, new_balance
         )
+
+    @classmethod
+    async def remove_currency_balance(
+        cls, wallet_id: str, currency_id: str, user: User
+    ) -> dict:
+        currency_balance_to_remove = await WalletCRUD.get_currency_balance(
+            user.id, wallet_id, currency_id
+        )
+
+        balance_value_to_remove = await cls._calculate_balance_value_to_remove(
+            currency_balance_to_remove, user
+        )
+        await cls._reduce_balance_from_user_app_data(
+            user.user_app_data.id, balance_value_to_remove
+        )
+
+        updated_wallet = await WalletCRUD.remove_currency_balance_from_wallet(
+            user.id, wallet_id, currency_id
+        )
+        return updated_wallet.to_dict()
+
+    @classmethod
+    async def _calculate_balance_value_to_remove(
+        cls, currency_balance: CurrencyBalance, user: User
+    ) -> Decimal:
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id(
+            user.user_app_data.id
+        )
+        return await cls._convert_balance_value_to_base_currency(
+            currency_balance.balance,
+            currency_balance.currency_id,
+            base_currency_id,
+            user.id,
+        )
+
+    @classmethod
+    async def _reduce_balance_from_user_app_data(
+        cls, user_app_data_id: str, balance_value: Decimal
+    ):
+        user_app_data = await UserAppDataCRUD.get_one_by_id(user_app_data_id)
+        user_app_data.wallets_value -= balance_value
+        user_app_data.net_worth -= balance_value
+        await UserAppDataCRUD.update_one_by_id(user_app_data_id, user_app_data)

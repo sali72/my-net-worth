@@ -91,4 +91,16 @@ async def add_currency_balance_route(
     return ResponseSchema(
         data={"wallet": updated_wallet}, message="Currency balance added successfully"
     )
-    
+
+@router.delete("/{wallet_id}/currency-balance/{currency_id}", response_model=ResponseSchema)
+async def remove_currency_balance_route(
+    wallet_id: str = Path(..., description="The ID of the wallet to update"),
+    currency_id: str = Path(..., description="The ID of the currency to remove"),
+    user=Depends(has_role(R.USER)),
+):
+    updated_wallet = await WalletController.remove_currency_balance(
+        wallet_id, currency_id, user
+    )
+    return ResponseSchema(
+        data={"wallet": updated_wallet}, message="Currency balance removed successfully"
+    )

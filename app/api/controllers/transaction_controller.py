@@ -1,7 +1,8 @@
-from typing import List
+from datetime import datetime
+from typing import List, Optional, Tuple
 
 from mongoengine import ValidationError
-from typing import Tuple
+
 from app.crud.category_crud import CategoryCRUD
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.transaction_crud import TransactionCRUD
@@ -377,3 +378,26 @@ class TransactionController:
             user_id,
             add=False,  # Reverse the addition
         )
+
+    @classmethod
+    async def filter_transactions(
+        cls,
+        user_id: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        transaction_type: Optional[str] = None,
+        category_id: Optional[str] = None,
+        from_wallet_id: Optional[str] = None,
+        to_wallet_id: Optional[str] = None,
+    ) -> List[dict]:
+        transactions: List[Transaction] = await TransactionCRUD.filter_transactions(
+            user_id,
+            start_date,
+            end_date,
+            transaction_type,
+            category_id,
+            from_wallet_id,
+            to_wallet_id,
+        )
+
+        return [transaction.to_dict() for transaction in transactions]

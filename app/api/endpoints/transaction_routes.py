@@ -1,13 +1,17 @@
-from fastapi import APIRouter, Depends, Path
-from models.schemas import (
-    ResponseSchema,
-    ErrorResponseModel,
-    TransactionCreateSchema,
-    TransactionUpdateSchema,
-)
-from models.schemas import Role as R
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Path, Query
+
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.transaction_controller import TransactionController
+from models.schemas import ErrorResponseModel, ResponseSchema
+from models.schemas import Role as R
+from models.schemas import (
+    TransactionCreateSchema,
+    TransactionUpdateSchema,
+    TransactionFilterParams,
+)
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
 
@@ -28,6 +32,26 @@ async def create_transaction_route(
     message = "Transaction created successfully"
     data = {"id": transaction_id}
     return ResponseSchema(data=data, message=message)
+
+
+@router.get("/filter", response_model=ResponseSchema)
+async def filter_transactions_route(
+    params: TransactionFilterParams = Query(...),
+    user=Depends(has_role(R.USER)),
+):
+    transactions = await TransactionController.filter_transactions(
+        user.id,
+        params.start_date,
+        params.end_date,
+        params.transaction_type,
+        params.category_id,
+        params.from_wallet_id,
+        params.to_wallet_id,
+    )
+    return ResponseSchema(
+        data={"transactions": transactions},
+        message="Filtered transactions retrieved successfully",
+    )
 
 
 @router.get("/{transaction_id}", response_model=ResponseSchema)

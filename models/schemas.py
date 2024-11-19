@@ -2,8 +2,17 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
+from fastapi import Query
 
-from pydantic import BaseModel, EmailStr, Extra, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Extra,
+    Field,
+    field_validator,
+    model_validator,
+    root_validator,
+)
 
 MAX_INTEGER_PART = 10**10
 MAX_DECIMAL_PART = 8
@@ -210,6 +219,52 @@ class TransactionCreateSchema(TransactionBaseSchema):
 
 class TransactionUpdateSchema(TransactionBaseSchema):
     pass
+
+
+class TransactionType(str, Enum):
+    INCOME = "income"
+    EXPENSE = "expense"
+    TRANSFER = "transfer"
+
+
+class TransactionFilterParams(BaseModel):
+    start_date: Optional[datetime] = Query(
+        None,
+        description="Start date for filtering in ISO format (e.g., 2023-10-15T14:30:00Z)",
+    )
+    end_date: Optional[datetime] = Query(
+        None,
+        description="End date for filtering in ISO format (e.g., 2023-10-15T14:30:00Z)",
+    )
+    transaction_type: Optional[TransactionType] = Query(
+        None, description="Type of transaction"
+    )
+    category_id: Optional[str] = Query(
+        None, description="Category ID for filtering transactions"
+    )
+    from_wallet_id: Optional[str] = Query(
+        None, description="ID of the wallet from which the transaction originates"
+    )
+    to_wallet_id: Optional[str] = Query(
+        None, description="ID of the wallet to which the transaction is directed"
+    )
+
+    @model_validator(mode="after")
+    def validate_wallet_ids(cls, values):
+        transaction_type = values.transaction_type
+        from_wallet_id = values.from_wallet_id
+        to_wallet_id = values.to_wallet_id
+
+        if transaction_type == TransactionType.INCOME and from_wallet_id:
+            raise ValueError(
+                "For 'income' transactions, 'from_wallet_id' must not be provided."
+            )
+        elif transaction_type == TransactionType.EXPENSE and to_wallet_id:
+            raise ValueError(
+                "For 'expense' transactions, 'to_wallet_id' must not be provided."
+            )
+
+        return values
 
 
 class CategoryCreateSchema(BaseModel):

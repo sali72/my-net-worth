@@ -1,6 +1,10 @@
-from mongoengine import DoesNotExist, QuerySet
-from models.models import Transaction
 from datetime import datetime
+from typing import Optional, List
+
+from mongoengine import DoesNotExist, QuerySet
+from mongoengine.queryset.visitor import Q
+
+from models.models import Transaction
 
 
 class TransactionCRUD:
@@ -72,3 +76,31 @@ class TransactionCRUD:
                 f"Transaction with id {transaction_id} for user {user_id} does not exist"
             )
         return result > 0
+
+    @classmethod
+    async def filter_transactions(
+        cls,
+        user_id: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        transaction_type: Optional[str] = None,
+        category_id: Optional[str] = None,
+        from_wallet_id: Optional[str] = None,
+        to_wallet_id: Optional[str] = None,
+    ) -> List[Transaction]:
+
+        query = Q(user_id=user_id)
+        if start_date:
+            query &= Q(date__gte=start_date)
+        if end_date:
+            query &= Q(date__lte=end_date)
+        if transaction_type:
+            query &= Q(type=transaction_type)
+        if category_id:
+            query &= Q(category_id=category_id)
+        if from_wallet_id:
+            query &= Q(from_wallet_id=from_wallet_id)
+        if to_wallet_id:
+            query &= Q(to_wallet_id=to_wallet_id)
+
+        return Transaction.objects(query)

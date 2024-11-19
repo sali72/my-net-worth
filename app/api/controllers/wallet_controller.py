@@ -152,15 +152,24 @@ class WalletController:
 
     @classmethod
     async def add_currency_balance(
-        cls, wallet_id: str, currency_balance: CurrencyBalanceSchema, user_id: str
+        cls, wallet_id: str, currency_balance: CurrencyBalanceSchema, user: User
     ) -> dict:
-        wallet = await WalletCRUD.get_one_by_user(wallet_id, user_id)
+        wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
         await cls.__validate_currency_and_wallet_type(currency_balance, wallet.type)
         cls._check_existing_currency_balance(wallet, currency_balance)
         new_balance = cls._create_currency_balance(currency_balance)
+        
+        # TODO: should make this atomic
         updated_wallet = await cls._update_wallet_with_new_balance(
-            user_id, wallet_id, new_balance
+            user.id, wallet_id, new_balance
         )
+        balance_value_to_add = await cls._calculate_balance_value(
+            new_balance, user
+        )
+        await cls._add_balance_to_user_app_data(
+            user.user_app_data.id, balance_value_to_add
+        )
+        
         return updated_wallet.to_dict()
 
     @classmethod
@@ -180,6 +189,15 @@ class WalletController:
             currency_id=currency_balance.currency_id,
             balance=Decimal(currency_balance.balance),
         )
+    
+    @classmethod
+    async def _add_balance_to_user_app_data(
+        cls, user_app_data_id: str, balance_value: Decimal
+    ):
+        user_app_data = await UserAppDataCRUD.get_one_by_id(user_app_data_id)
+        user_app_data.wallets_value += balance_value
+        user_app_data.net_worth += balance_value
+        await UserAppDataCRUD.update_one_by_id(user_app_data_id, user_app_data)
 
     @classmethod
     async def _update_wallet_with_new_balance(cls, user_id, wallet_id, new_balance):
@@ -195,20 +213,21 @@ class WalletController:
             user.id, wallet_id, currency_id
         )
 
-        balance_value_to_remove = await cls._calculate_balance_value_to_remove(
+        # TODO: should make this atomic
+        balance_value_to_remove = await cls._calculate_balance_value(
             currency_balance_to_remove, user
         )
         await cls._reduce_balance_from_user_app_data(
             user.user_app_data.id, balance_value_to_remove
         )
-
         updated_wallet = await WalletCRUD.remove_currency_balance_from_wallet(
             user.id, wallet_id, currency_id
         )
+        
         return updated_wallet.to_dict()
 
     @classmethod
-    async def _calculate_balance_value_to_remove(
+    async def _calculate_balance_value(
         cls, currency_balance: CurrencyBalance, user: User
     ) -> Decimal:
         base_currency_id = await UserAppDataCRUD.get_base_currency_id(

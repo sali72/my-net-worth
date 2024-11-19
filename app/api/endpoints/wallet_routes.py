@@ -86,7 +86,7 @@ async def add_currency_balance_route(
     user=Depends(has_role(R.USER)),
 ):
     updated_wallet = await WalletController.add_currency_balance(
-        wallet_id, currency_balance, user.id
+        wallet_id, currency_balance, user
     )
     return ResponseSchema(
         data={"wallet": updated_wallet}, message="Currency balance added successfully"

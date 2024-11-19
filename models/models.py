@@ -103,7 +103,7 @@ class Currency(BaseDocument):
 
 
 class CurrencyBalance(EmbeddedDocument):
-    currency_id = LazyReferenceField("Currency", required=True)
+    currency_id = LazyReferenceField("Currency", required=True, unique=True)
     balance = DecimalField(min_value=0, required=True, precision=PRECISION_LIMIT_IN_DB)
 
 

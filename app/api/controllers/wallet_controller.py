@@ -41,7 +41,7 @@ class WalletController:
     ) -> List[CurrencyBalance]:
         currency_balances = []
         for cb in currency_balances_in_schema:
-            await cls.__validate_currency(cb, wallet_currency_type)
+            await cls.__validate_currency_and_wallet_type(cb, wallet_currency_type)
             currency_balance = CurrencyBalance(
                 currency_id=cb.currency_id,
                 balance=Decimal(cb.balance),
@@ -50,7 +50,7 @@ class WalletController:
         return currency_balances
 
     @classmethod
-    async def __validate_currency(cls, cb, wallet_currency_type):
+    async def __validate_currency_and_wallet_type(cls, cb, wallet_currency_type):
         currency: Currency = await CurrencyCRUD.get_one_by_id(cb.currency_id)
         if currency.currency_type != wallet_currency_type:
             raise HTTPException(
@@ -160,3 +160,48 @@ class WalletController:
             user_id, currency.id, base_currency_id
         )
         return balance.balance * exchange_rate
+
+    @classmethod
+    async def add_currency_balance(
+        cls, wallet_id: str, currency_balance: CurrencyBalanceSchema, user_id: str
+    ) -> dict:
+        wallet = await WalletCRUD.get_one_by_user(wallet_id, user_id)
+        await cls.__validate_currency_and_wallet_type(currency_balance, wallet.type)
+        cls._check_existing_currency_balance(wallet, currency_balance)
+        new_balance = cls._create_currency_balance(currency_balance)
+        updated_wallet = await cls._update_wallet_with_new_balance(
+            user_id, wallet_id, new_balance
+        )
+        return updated_wallet.to_dict()
+
+    @classmethod
+    def _validate_currency_type(cls, currency_balance, wallet_type):
+        if currency_balance.currency_type != wallet_type:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Wallet type and currency type mismatch",
+            )
+
+    @classmethod
+    def _check_existing_currency_balance(cls, wallet, currency_balance):
+        if any(
+            str(balance.currency_id.pk) == currency_balance.currency_id
+            for balance in wallet.currency_balances
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Currency balance already exists in the wallet",
+            )
+
+    @classmethod
+    def _create_currency_balance(cls, currency_balance):
+        return CurrencyBalance(
+            currency_id=currency_balance.currency_id,
+            balance=Decimal(currency_balance.balance),
+        )
+
+    @classmethod
+    async def _update_wallet_with_new_balance(cls, user_id, wallet_id, new_balance):
+        return await WalletCRUD.add_currency_balance_to_wallet(
+            user_id, wallet_id, new_balance
+        )

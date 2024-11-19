@@ -4,6 +4,7 @@ from models.schemas import (
     WalletCreateSchema,
     WalletUpdateSchema,
     ErrorResponseModel,
+    CurrencyBalanceSchema,
 )
 from models.schemas import Role as R
 from app.api.controllers.auth_controller import has_role
@@ -77,3 +78,17 @@ async def delete_wallet_route(
 ):
     success = await WalletController.delete_wallet(wallet_id, user.id)
     return ResponseSchema(message="Wallet deleted successfully")
+
+@router.post("/{wallet_id}/currency-balance", response_model=ResponseSchema)
+async def add_currency_balance_route(
+    currency_balance: CurrencyBalanceSchema,
+    wallet_id: str = Path(..., description="The ID of the wallet to update"),
+    user=Depends(has_role(R.USER)),
+):
+    updated_wallet = await WalletController.add_currency_balance(
+        wallet_id, currency_balance, user.id
+    )
+    return ResponseSchema(
+        data={"wallet": updated_wallet}, message="Currency balance added successfully"
+    )
+    

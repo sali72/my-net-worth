@@ -64,7 +64,7 @@ async def update_wallet_route(
     user=Depends(has_role(R.USER)),
 ):
     updated_wallet = await WalletController.update_wallet(
-        wallet_id, wallet_schema, user.id
+        wallet_id, wallet_schema, user
     )
     return ResponseSchema(
         data={"wallet": updated_wallet}, message="Wallet updated successfully"

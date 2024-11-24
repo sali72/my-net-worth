@@ -43,8 +43,6 @@ class WalletCRUD:
     def __update_wallet_fields(wallet: Wallet, updated_wallet: Wallet):
         if updated_wallet.name is not None:
             wallet.name = updated_wallet.name
-        if updated_wallet.type is not None:
-            wallet.type = updated_wallet.type
 
     @staticmethod
     def __update_currency_balances(wallet: Wallet, updated_wallet: Wallet):

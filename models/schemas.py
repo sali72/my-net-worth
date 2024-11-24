@@ -82,7 +82,6 @@ class WalletCreateSchema(BaseModel):
 
 class WalletUpdateSchema(BaseModel):
     name: Optional[str] = Field(None, example="Savings Wallet")
-    type: Optional[str] = Field(None, choices=["fiat", "crypto"], example="fiat")
     currency_balances: Optional[List[CurrencyBalanceSchema]] = Field(
         None, example=[{"currency_id": "currency_id_123", "balance": Decimal("150.00")}]
     )

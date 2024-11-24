@@ -87,3 +87,7 @@ class UserAppDataController:
         user_app_data: UserAppData = user.user_app_data
         user_app_data.net_worth = net_worth
         await UserAppDataCRUD.update_one_by_id(user.user_app_data.id, user_app_data)
+
+    @classmethod
+    async def get_user_app_data(cls, user: User) -> dict:
+        return user.user_app_data.to_dict()

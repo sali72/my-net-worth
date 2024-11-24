@@ -37,3 +37,12 @@ async def calculate_net_worth_route(user=Depends(has_role(R.USER))):
         data={"net_worth": net_worth},
         message="Net worth calculated successfully",
     )
+
+
+@router.get("/user-data", response_model=ResponseSchema)
+async def get_user_app_data_route(user=Depends(has_role(R.USER))):
+    user_app_data = await UserAppDataController.get_user_app_data(user)
+    return ResponseSchema(
+        data=user_app_data,
+        message="User app data retrieved successfully",
+    )

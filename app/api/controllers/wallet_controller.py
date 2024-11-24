@@ -108,7 +108,6 @@ class WalletController:
 
         updated_wallet = Wallet(
             name=wallet_schema.name,
-            type=wallet_schema.type,
             currency_balances=currency_balances,
         )
         return updated_wallet

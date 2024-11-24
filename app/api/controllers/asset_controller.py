@@ -1,13 +1,15 @@
 from decimal import Decimal
 from typing import List
 
+from mongoengine import Q
+
 from app.crud.asset_crud import AssetCRUD
 from app.crud.asset_type_crud import AssetTypeCRUD
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
 from app.crud.user_app_data_crud import UserAppDataCRUD
 from models.models import Asset, Currency, User, UserAppData
-from models.schemas import AssetCreateSchema, AssetUpdateSchema
+from models.schemas import AssetCreateSchema, AssetFilterSchema, AssetUpdateSchema
 
 
 class AssetController:
@@ -89,7 +91,7 @@ class AssetController:
             total_value += await cls._calculate_asset_value(
                 asset, base_currency, user.id
             )
-            
+
         await cls._update_user_app_data_assets_value(user, total_value)
 
         return total_value
@@ -124,3 +126,10 @@ class AssetController:
             user_id, asset.currency_id.id, base_currency.id
         )
         return asset.value * Decimal(exchange_rate)
+
+    @classmethod
+    async def filter_assets(
+        cls, filters: AssetFilterSchema, user_id: str
+    ) -> List[dict]:
+        assets = await AssetCRUD.get_filtered_assets(filters, user_id)
+        return [asset.to_dict() for asset in assets]

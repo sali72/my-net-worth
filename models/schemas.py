@@ -2,8 +2,8 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
-from fastapi import Query
 
+from fastapi import Query
 from pydantic import (
     BaseModel,
     EmailStr,
@@ -265,6 +265,7 @@ class TransactionFilterParams(BaseModel):
 
         return values
 
+
 class TransactionStatisticsParams(BaseModel):
     start_date: Optional[datetime] = Query(
         None,
@@ -342,6 +343,43 @@ class AssetUpdateSchema(BaseModel):
     updated_at: datetime = Field(
         default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
     )
+
+
+class AssetFilterSchema(BaseModel):
+    name: Optional[str] = Query(
+        None,
+        description="Search by asset name",
+    )
+    asset_type_id: Optional[str] = Query(
+        None,
+        description="Filter by asset type ID",
+    )
+    currency_id: Optional[str] = Query(
+        None,
+        description="Filter by currency ID",
+    )
+    created_at_start: Optional[datetime] = Query(
+        None,
+        description="Start date for created_at filter in ISO format like: 2023-10-01T00:00:00Z",
+    )
+    created_at_end: Optional[datetime] = Query(
+        None,
+        description="End date for created_at filter in ISO format like: 2023-10-31T23:59:59Z",
+    )
+    updated_at_start: Optional[datetime] = Query(
+        None,
+        description="Start date for updated_at filter in ISO format like: 2023-10-01T00:00:00Z",
+    )
+    updated_at_end: Optional[datetime] = Query(
+        None,
+        description="End date for updated_at filter in ISO format like: 2023-10-31T23:59:59Z",
+    )
+
+    @field_validator("name")
+    def name_min_length(cls, v):
+        if v is not None and len(v) < 3:
+            raise ValueError("Name must be at least 3 characters long")
+        return v
 
 
 class Token(BaseModel):

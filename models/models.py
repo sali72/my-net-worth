@@ -248,3 +248,8 @@ class Asset(BaseDocument):
             }
         ]
     }
+
+    def clean(self):
+        super().clean()  # Call the parent class's clean method if needed
+        if len(self.name) < 3:
+            raise ValidationError("Name must be at least 3 characters long.")

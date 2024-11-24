@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, Path
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Path, Query
 
 from app.api.controllers.asset_controller import AssetController
 from app.api.controllers.auth_controller import has_role
 from models.schemas import (
     AssetCreateSchema,
+    AssetFilterSchema,
     AssetUpdateSchema,
     ErrorResponseModel,
     ResponseSchema,
@@ -35,6 +38,18 @@ async def calculate_total_asset_value_route(user=Depends(has_role(R.USER))):
     return ResponseSchema(
         data={"total_value": total_value},
         message="Total asset value calculated successfully",
+    )
+
+
+@router.get("/filter", response_model=ResponseSchema)
+async def filter_assets_route(
+    params: AssetFilterSchema = Query(...),
+    user=Depends(has_role(R.USER)),
+):
+    filtered_assets = await AssetController.filter_assets(params, user.id)
+    return ResponseSchema(
+        data={"assets": filtered_assets},
+        message="Filtered assets retrieved successfully",
     )
 
 

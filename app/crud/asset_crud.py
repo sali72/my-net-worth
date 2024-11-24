@@ -1,6 +1,10 @@
-from mongoengine import DoesNotExist, QuerySet
-from models.models import Asset
 from datetime import datetime
+from typing import List
+
+from mongoengine import DoesNotExist, Q, QuerySet
+
+from models.models import Asset
+from models.schemas import AssetFilterSchema
 
 
 class AssetCRUD:
@@ -57,6 +61,31 @@ class AssetCRUD:
         return result > 0
 
     @classmethod
-    async def update_asset_value_with_exchange_rate(cls, asset: Asset, exchange_rate: float) -> None:
+    async def update_asset_value_with_exchange_rate(
+        cls, asset: Asset, exchange_rate: float
+    ) -> None:
         asset.value *= exchange_rate
         asset.save()
+
+    @classmethod
+    async def get_filtered_assets(
+        cls, filters: AssetFilterSchema, user_id: str
+    ) -> List[Asset]:
+        query = Q(user_id=user_id)
+
+        if filters.name:
+            query &= Q(name__icontains=filters.name)
+        if filters.asset_type_id:
+            query &= Q(asset_type_id=filters.asset_type_id)
+        if filters.currency_id:
+            query &= Q(currency_id=filters.currency_id)
+        if filters.created_at_start:
+            query &= Q(created_at__gte=filters.created_at_start)
+        if filters.created_at_end:
+            query &= Q(created_at__lte=filters.created_at_end)
+        if filters.updated_at_start:
+            query &= Q(updated_at__gte=filters.updated_at_start)
+        if filters.updated_at_end:
+            query &= Q(updated_at__lte=filters.updated_at_end)
+
+        return Asset.objects(query)

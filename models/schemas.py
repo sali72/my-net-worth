@@ -154,14 +154,12 @@ class CurrencyExchangeUpdateSchema(BaseModel):
 
 
 class TransactionBaseSchema(BaseModel):
-    from_wallet_id: Optional[str] = Field(None, example="from_wallet_id_123")
-    to_wallet_id: Optional[str] = Field(None, example="to_wallet_id_123")
     category_id: Optional[str] = Field(None, example="category_id_123")
-    currency_id: Optional[str] = Field(None, example="currency_id_123")
-    type: Optional[str] = Field(
-        None, choices=["income", "expense", "transfer"], example="transfer"
-    )
     amount: Optional[Decimal] = Field(None, example="50.75")
+    date: Optional[datetime] = Field(None, example="2023-10-15T14:30:00Z")
+    description: Optional[str] = Field(
+        None, max_length=255, example="Transfer to savings"
+    )
 
     @field_validator("amount", mode="before")
     def validate_amount(cls, v):
@@ -169,10 +167,15 @@ class TransactionBaseSchema(BaseModel):
             return check_value_precision(v, "Amount")
         return v
 
-    date: Optional[datetime] = Field(None, example="2023-10-15T14:30:00Z")
-    description: Optional[str] = Field(
-        None, max_length=255, example="Transfer to savings"
+
+class TransactionCreateSchema(TransactionBaseSchema):
+    from_wallet_id: Optional[str] = Field(None, example="from_wallet_id_123")
+    to_wallet_id: Optional[str] = Field(None, example="to_wallet_id_123")
+    currency_id: str = Field(..., example="currency_id_123")
+    type: str = Field(
+        ..., choices=["income", "expense", "transfer"], example="transfer"
     )
+    amount: Decimal = Field(..., example="50.75")
 
     @model_validator(mode="after")
     def validate_transaction(cls, values):
@@ -219,22 +222,6 @@ class TransactionBaseSchema(BaseModel):
             raise ValueError("to_wallet_id is required for incomes.")
         if from_wallet_id:
             raise ValueError("from_wallet_id should not be provided for incomes.")
-
-
-class TransactionCreateSchema(TransactionBaseSchema):
-    currency_id: str = Field(..., example="currency_id_123")
-    type: str = Field(
-        ..., choices=["income", "expense", "transfer"], example="transfer"
-    )
-    amount: Decimal = Field(..., example="50.75")
-
-    @field_validator("amount", mode="before")
-    def validate_amount(cls, v):
-        return check_value_precision(v, "Amount")
-
-    date: Optional[datetime] = Field(
-        default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
-    )
 
 
 class TransactionUpdateSchema(TransactionBaseSchema):

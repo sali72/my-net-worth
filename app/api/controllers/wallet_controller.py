@@ -18,7 +18,9 @@ class WalletController:
         wallet = await cls.__create_wallet_obj_to_create(wallet_schema, user.id)
 
         for cb in wallet.currency_balances:
-            await cls.__validate_currency_and_wallet_type_match(cb, wallet.type)
+            await cls.__validate_currency_and_wallet_type_match(
+                cb.currency_id.pk, wallet.type
+            )
 
         wallet_in_db: Wallet = await WalletCRUD.create_one(wallet)
         return wallet_in_db.to_dict()
@@ -53,9 +55,9 @@ class WalletController:
 
     @classmethod
     async def __validate_currency_and_wallet_type_match(
-        cls, cb: CurrencyBalance, wallet_currency_type: str
+        cls, cb_currency_id: str, wallet_currency_type: str
     ):
-        currency: Currency = await CurrencyCRUD.get_one_by_id(cb.currency_id.pk)
+        currency: Currency = await CurrencyCRUD.get_one_by_id(cb_currency_id)
         if currency.currency_type != wallet_currency_type:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -84,7 +86,7 @@ class WalletController:
         if updated_wallet.currency_balances:
             for cb in updated_wallet.currency_balances:
                 await cls.__validate_currency_and_wallet_type_match(
-                    cb, current_wallet.type
+                    cb.currency_id.pk, current_wallet.type
                 )
 
         await WalletCRUD.update_one_by_user(user.id, wallet_id, updated_wallet)
@@ -171,7 +173,7 @@ class WalletController:
     ) -> dict:
         wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
         await cls.__validate_currency_and_wallet_type_match(
-            currency_balance, wallet.type
+            currency_balance.currency_id, wallet.type
         )
         cls._check_existing_currency_balance(wallet, currency_balance)
         new_balance = cls._create_currency_balance(currency_balance)

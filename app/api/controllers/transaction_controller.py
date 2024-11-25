@@ -32,11 +32,61 @@ class TransactionController:
 
     @classmethod
     async def _validate_transaction_data(
-        cls, transaction_schema: TransactionCreateSchema, user_id
+        cls, transaction_schema: TransactionCreateSchema, user_id: str
     ) -> None:
         if transaction_schema.category_id:
             await CategoryCRUD.get_one_by_user(transaction_schema.category_id, user_id)
-        await CurrencyCRUD.get_one_by_user(transaction_schema.currency_id, user_id)
+
+        await cls._check_currency_existence_in_wallets(transaction_schema, user_id)
+
+    @classmethod
+    async def _check_currency_existence_in_wallets(
+        cls, transaction_schema: TransactionCreateSchema, user_id: str
+    ) -> None:
+        if transaction_schema.type == "income":
+            to_wallet = await WalletCRUD.get_one_by_user(
+                transaction_schema.to_wallet_id, user_id
+            )
+            if not cls._currency_exists_in_wallet(
+                to_wallet, transaction_schema.currency_id
+            ):
+                raise ValidationError(
+                    "Currency does not exist in the destination wallet for income transactions."
+                )
+
+        elif transaction_schema.type == "expense":
+            from_wallet = await WalletCRUD.get_one_by_user(
+                transaction_schema.from_wallet_id, user_id
+            )
+            if not cls._currency_exists_in_wallet(
+                from_wallet, transaction_schema.currency_id
+            ):
+                raise ValidationError(
+                    "Currency does not exist in the source wallet for expense transactions."
+                )
+
+        elif transaction_schema.type == "transfer":
+            from_wallet = await WalletCRUD.get_one_by_user(
+                transaction_schema.from_wallet_id, user_id
+            )
+            to_wallet = await WalletCRUD.get_one_by_user(
+                transaction_schema.to_wallet_id, user_id
+            )
+            if not cls._currency_exists_in_wallet(
+                from_wallet, transaction_schema.currency_id
+            ) or not cls._currency_exists_in_wallet(
+                to_wallet, transaction_schema.currency_id
+            ):
+                raise ValidationError(
+                    "Currency must exist in both source and destination wallets for transfer transactions."
+                )
+
+    @staticmethod
+    def _currency_exists_in_wallet(wallet: Wallet, currency_id: str) -> bool:
+        return any(
+            balance.currency_id.pk == currency_id
+            for balance in wallet.currency_balances
+        )
 
     @classmethod
     async def _update_wallet_balances(
@@ -228,15 +278,19 @@ class TransactionController:
         await TransactionCRUD.update_one_by_user(
             user_id, transaction_id, updated_transaction
         )
-        
+
         if updated_transaction.amount:
-            await cls._adjust_wallet_balances_for_update(transaction_id, user_id, existing_transaction, updated_transaction)
+            await cls._adjust_wallet_balances_for_update(
+                transaction_id, user_id, existing_transaction, updated_transaction
+            )
 
         transaction_from_db = await TransactionCRUD.get_one_by_id(transaction_id)
         return transaction_from_db.to_dict()
 
     @classmethod
-    async def _adjust_wallet_balances_for_update(cls, transaction_id, user_id, existing_transaction, updated_transaction):
+    async def _adjust_wallet_balances_for_update(
+        cls, transaction_id, user_id, existing_transaction, updated_transaction
+    ):
         amount_difference = updated_transaction.amount - existing_transaction.amount
 
         if amount_difference != 0:

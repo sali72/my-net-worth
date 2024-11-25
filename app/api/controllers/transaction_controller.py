@@ -84,7 +84,7 @@ class TransactionController:
     @staticmethod
     def _currency_exists_in_wallet(wallet: Wallet, currency_id: str) -> bool:
         return any(
-            balance.currency_id.pk == currency_id
+            str(balance.currency_id.pk) == currency_id
             for balance in wallet.currency_balances
         )
 

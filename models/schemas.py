@@ -86,8 +86,8 @@ class CurrencyCreateSchema(BaseModel):
 
     @model_validator(mode="after")
     def check_code_length(cls, values):
-        code = values.get("code")
-        currency_type = values.get("currency_type")
+        code = values.code
+        currency_type = values.currency_type
 
         if currency_type == "fiat" and len(code) != 3:
             raise ValueError("Code must be exactly 3 characters for fiat currencies.")
@@ -109,8 +109,8 @@ class CurrencyUpdateSchema(BaseModel):
 
     @model_validator(mode="after")
     def check_code_length(cls, values):
-        code = values.get("code")
-        currency_type = values.get("currency_type")
+        code = values.code
+        currency_type = values.currency_type
 
         if code and currency_type:
             if currency_type == "fiat" and len(code) != 3:

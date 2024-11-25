@@ -9,10 +9,17 @@ from models.models import Currency, User, UserAppData
 
 class UserAppDataController:
     @classmethod
-    async def change_base_currency_by_id(cls, user: User, currency_id: str) -> dict:
+    async def change_base_currency_by_id(
+        cls, user: User, new_base_currency_id: str
+    ) -> dict:
         current_base_currency = await cls._get_base_currency(user)
 
-        currency_to_set = await cls._retrieve_currency_to_set(user.id, currency_id)
+        if str(current_base_currency.id) == new_base_currency_id:
+            raise ValidationError("This currency is already set as base currency")
+
+        currency_to_set = await cls._retrieve_currency_to_set(
+            user.id, new_base_currency_id
+        )
 
         # Check for necessary exchange rates
         await cls._validate_exchange_rates(
@@ -44,7 +51,7 @@ class UserAppDataController:
     async def _validate_exchange_rates(
         cls, user_id: str, current_base_currency: Currency, new_base_currency: Currency
     ) -> None:
-        # Get all wallets for the user
+
         wallets = await WalletCRUD.get_all_by_user_id_optional(user_id)
         held_currency_ids = {
             balance.currency_id.id
@@ -80,13 +87,16 @@ class UserAppDataController:
     async def _set_new_base_currency(
         cls, user_app_data: UserAppData, currency: Currency
     ) -> Currency:
-        return await UserAppDataCRUD.set_base_currency(user_app_data, currency)
+        return await UserAppDataCRUD.set_base_currency(user_app_data, currency.id)
 
     @classmethod
     async def update_user_app_data_net_worth(cls, user, net_worth):
         user_app_data: UserAppData = user.user_app_data
         user_app_data.net_worth = net_worth
-        await UserAppDataCRUD.update_one_by_id(user.user_app_data.id, user_app_data)
+        updated_data = await UserAppDataCRUD.update_one_by_id(
+            user.user_app_data.id, user_app_data
+        )
+        return updated_data.to_dict()
 
     @classmethod
     async def get_user_app_data(cls, user: User) -> dict:

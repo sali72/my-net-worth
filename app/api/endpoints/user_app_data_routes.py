@@ -17,7 +17,13 @@ async def change_base_currency_by_id_route(
     ),
     user=Depends(has_role(R.USER)),
 ):
-    result = await UserAppDataController.change_base_currency_by_id(user, currency_id)
+    await UserAppDataController.change_base_currency_by_id(user, currency_id)
+    
+    total_wallets_value = await WalletController.calculate_total_wallet_value(user)
+    total_assets_value = await AssetController.calculate_total_asset_value(user)
+    net_worth = total_wallets_value + total_assets_value
+    result = await UserAppDataController.update_user_app_data_net_worth(user, net_worth)
+    
     return ResponseSchema(
         data=result,
         message="Base currency changed successfully",

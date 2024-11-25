@@ -60,6 +60,5 @@ class CategoryController:
     ) -> Category:
         return Category(
             name=category_schema.name,
-            type=category_schema.type,
             description=category_schema.description,
         )

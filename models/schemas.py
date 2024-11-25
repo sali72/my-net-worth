@@ -297,9 +297,6 @@ class CategoryCreateSchema(BaseModel):
 
 class CategoryUpdateSchema(BaseModel):
     name: Optional[str] = Field(None, max_length=50, example="Groceries")
-    type: Optional[str] = Field(
-        None, choices=["income", "expense", "transfer"], example="expense"
-    )
     description: Optional[str] = Field(
         None, max_length=255, example="Necessary Grocery shoppings"
     )

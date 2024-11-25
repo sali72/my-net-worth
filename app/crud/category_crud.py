@@ -41,8 +41,6 @@ class CategoryCRUD:
     def __update_category_fields(category: Category, updated_category: Category):
         if updated_category.name is not None:
             category.name = updated_category.name
-        if updated_category.type is not None:
-            category.type = updated_category.type
         if updated_category.description is not None:
             category.description = updated_category.description
         if updated_category.is_predefined is not None:

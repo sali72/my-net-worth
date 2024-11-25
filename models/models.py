@@ -62,9 +62,9 @@ class BaseDocument(Document):
 
 class UserAppData(BaseDocument):
     base_currency_id = LazyReferenceField("Currency", required=True)
-    net_worth = DecimalField(min_value=0, precision=PRECISION_LIMIT_IN_DB)
-    assets_value = DecimalField(min_value=0, precision=PRECISION_LIMIT_IN_DB)
-    wallets_value = DecimalField(min_value=0, precision=PRECISION_LIMIT_IN_DB)
+    net_worth = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
+    assets_value = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
+    wallets_value = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
 

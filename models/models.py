@@ -82,7 +82,7 @@ class User(BaseDocument):
 
 class Currency(BaseDocument):
     user_id = ReferenceField("User", required=False)
-    code = StringField(required=True, max_length=3)
+    code = StringField(required=True, max_length=10)  # Set max_length to the maximum possible length
     name = StringField(required=True, max_length=50)
     symbol = StringField(required=True, max_length=5)
     is_predefined = BooleanField(default=False)
@@ -98,8 +98,20 @@ class Currency(BaseDocument):
     }
 
     def clean(self):
+        # Call the parent class's clean method
+        super().clean()
+
+        # Validate user_id for non-predefined currencies
         if not self.is_predefined and not self.user_id:
             raise ValidationError("user_id is required for non-predefined currencies.")
+
+        # Validate code length based on currency_type
+        if self.currency_type == "fiat":
+            if len(self.code) != 3:
+                raise ValidationError("Code must be exactly 3 characters for fiat currencies.")
+        elif self.currency_type == "crypto":
+            if not (3 <= len(self.code) <= 10):
+                raise ValidationError("Code must be between 3 and 10 characters for crypto currencies.")
 
 
 class CurrencyBalance(EmbeddedDocument):

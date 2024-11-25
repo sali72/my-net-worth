@@ -2,7 +2,6 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
-
 from fastapi import Query
 from pydantic import (
     BaseModel,
@@ -11,7 +10,6 @@ from pydantic import (
     Field,
     field_validator,
     model_validator,
-    root_validator,
 )
 
 MAX_INTEGER_PART = 10**10
@@ -30,13 +28,6 @@ def check_value_precision(value: Decimal, field_name: str) -> Decimal:
 
 
 class BaseModelConfigured(BaseModel):
-    """
-    Adds configuration to base model to use for all schemas.
-
-    Configurations:
-    forbid extra fields
-    """
-
     class Config:
         extra = Extra.forbid
 
@@ -88,19 +79,50 @@ class WalletUpdateSchema(BaseModel):
 
 
 class CurrencyCreateSchema(BaseModel):
-    code: str = Field(..., max_length=3, example="USD")
+    code: str = Field(..., max_length=10, example="USD")
     name: str = Field(..., max_length=50, example="United States Dollar")
     symbol: str = Field(..., max_length=5, example="$")
     currency_type: str = Field(..., choices=["fiat", "crypto"], example="fiat")
 
+    @model_validator(mode="after")
+    def check_code_length(cls, values):
+        code = values.get("code")
+        currency_type = values.get("currency_type")
+
+        if currency_type == "fiat" and len(code) != 3:
+            raise ValueError("Code must be exactly 3 characters for fiat currencies.")
+        elif currency_type == "crypto" and not (3 <= len(code) <= 10):
+            raise ValueError(
+                "Code must be between 3 and 10 characters for crypto currencies."
+            )
+
+        return values
+
 
 class CurrencyUpdateSchema(BaseModel):
-    code: Optional[str] = Field(None, max_length=3, example="USD")
+    code: Optional[str] = Field(None, max_length=10, example="USD")
     name: Optional[str] = Field(None, max_length=50, example="United States Dollar")
     symbol: Optional[str] = Field(None, max_length=5, example="$")
     currency_type: Optional[str] = Field(
         None, choices=["fiat", "crypto"], example="fiat"
     )
+
+    @model_validator(mode="after")
+    def check_code_length(cls, values):
+        code = values.get("code")
+        currency_type = values.get("currency_type")
+
+        if code and currency_type:
+            if currency_type == "fiat" and len(code) != 3:
+                raise ValueError(
+                    "Code must be exactly 3 characters for fiat currencies."
+                )
+            elif currency_type == "crypto" and not (3 <= len(code) <= 10):
+                raise ValueError(
+                    "Code must be between 3 and 10 characters for crypto currencies."
+                )
+
+        return values
 
 
 class CurrencyExchangeCreateSchema(BaseModel):
@@ -120,7 +142,7 @@ class CurrencyExchangeCreateSchema(BaseModel):
 class CurrencyExchangeUpdateSchema(BaseModel):
     from_currency_id: Optional[str] = Field(None, example="currency_id_123")
     to_currency_id: Optional[str] = Field(None, example="currency_id_456")
-    rate: Optional[Decimal] = Field(None, example=Decimal("0.85"))
+    rate: Optional[Decimal] = Field(None, example="0.85")
 
     @field_validator("rate", mode="before")
     def validate_rate(cls, v):
@@ -139,7 +161,7 @@ class TransactionBaseSchema(BaseModel):
     type: Optional[str] = Field(
         None, choices=["income", "expense", "transfer"], example="transfer"
     )
-    amount: Optional[Decimal] = Field(None, example=Decimal("50.75"))
+    amount: Optional[Decimal] = Field(None, example="50.75")
 
     @field_validator("amount", mode="before")
     def validate_amount(cls, v):
@@ -204,7 +226,7 @@ class TransactionCreateSchema(TransactionBaseSchema):
     type: str = Field(
         ..., choices=["income", "expense", "transfer"], example="transfer"
     )
-    amount: Decimal = Field(..., example=Decimal("50.75"))
+    amount: Decimal = Field(..., example="50.75")
 
     @field_validator("amount", mode="before")
     def validate_amount(cls, v):
@@ -331,7 +353,7 @@ class AssetUpdateSchema(BaseModel):
     description: Optional[str] = Field(
         None, max_length=255, example="A beautiful house in the suburbs"
     )
-    value: Optional[Decimal] = Field(None, example=Decimal("350000.00"))
+    value: Optional[Decimal] = Field(None, example="350000.00")
 
     @field_validator("value", mode="before")
     def validate_value(cls, v):

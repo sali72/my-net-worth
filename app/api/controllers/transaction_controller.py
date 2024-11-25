@@ -280,7 +280,7 @@ class TransactionController:
         )
 
         if updated_transaction.amount:
-            await cls._adjust_wallet_balances_for_update(
+            await cls._update_wallet_amount_differences(
                 transaction_id, user_id, existing_transaction, updated_transaction
             )
 
@@ -288,7 +288,7 @@ class TransactionController:
         return transaction_from_db.to_dict()
 
     @classmethod
-    async def _adjust_wallet_balances_for_update(
+    async def _update_wallet_amount_differences(
         cls, transaction_id, user_id, existing_transaction, updated_transaction
     ):
         amount_difference = updated_transaction.amount - existing_transaction.amount

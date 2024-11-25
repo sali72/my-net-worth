@@ -20,15 +20,20 @@ from database.initialize_db import (
     initialize_common_categories,
     initialize_fiat_and_crypto_currencies,
 )
+# from models.models import AssetType
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     connect_to_db()
+    # # Initialize db with predefined values
     # await initialize_fiat_and_crypto_currencies()
     # await initialize_common_asset_types()
     # await initialize_common_categories()
-
+    
+    # # Fix indexes of collections if needed
+    # AssetType._get_collection().drop_indexes()
+    # AssetType.ensure_indexes()
     yield
 
 

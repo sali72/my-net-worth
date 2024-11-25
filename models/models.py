@@ -262,14 +262,32 @@ class AssetType(BaseDocument):
     is_predefined = BooleanField(default=False)
     meta = {
         "indexes": [
-            {"fields": ("user_id", "name"), "unique": True},
+            {
+                "fields": ("name",),
+                "unique": True,
+                "partialFilterExpression": {"is_predefined": True},
+            },
+            {
+                "fields": ("user_id", "name"),
+                "unique": True,
+                "partialFilterExpression": {"is_predefined": False},
+            },
         ]
     }
 
     def clean(self):
         if not self.is_predefined and not self.user_id:
             raise ValidationError("user_id is required for non-predefined asset types.")
-
+        
+        # Check if a predefined category with the same name exists
+        if not self.is_predefined:
+            existing_predefined = AssetType.objects(
+                name=self.name, is_predefined=True
+            ).first()
+            if existing_predefined:
+                raise ValidationError(
+                    f"A predefined category with the name '{self.name}' already exists."
+                )
 
 class Asset(BaseDocument):
     user_id = ReferenceField(User, required=True)

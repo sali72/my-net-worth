@@ -288,7 +288,7 @@ class TransactionStatisticsParams(BaseModel):
 class CategoryCreateSchema(BaseModel):
     name: str = Field(..., max_length=50, example="Groceries")
     type: str = Field(
-        ..., choices=["income", "expense", "transfer"], example="transfer"
+        ..., choices=["income", "expense", "transfer"], example="expense"
     )
     description: Optional[str] = Field(
         None, max_length=255, example="Necessary Grocery shoppings"
@@ -298,7 +298,7 @@ class CategoryCreateSchema(BaseModel):
 class CategoryUpdateSchema(BaseModel):
     name: Optional[str] = Field(None, max_length=50, example="Groceries")
     type: Optional[str] = Field(
-        None, choices=["income", "expense", "transfer"], example="transfer"
+        None, choices=["income", "expense", "transfer"], example="expense"
     )
     description: Optional[str] = Field(
         None, max_length=255, example="Necessary Grocery shoppings"

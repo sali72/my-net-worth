@@ -64,7 +64,9 @@ class UserAppData(BaseDocument):
     base_currency_id = LazyReferenceField("Currency", required=True)
     net_worth = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
     assets_value = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
-    wallets_value = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
+    wallets_value = DecimalField(
+        default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB
+    )
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
 
@@ -82,7 +84,9 @@ class User(BaseDocument):
 
 class Currency(BaseDocument):
     user_id = ReferenceField("User", required=False)
-    code = StringField(required=True, max_length=10)  # Set max_length to the maximum possible length
+    code = StringField(
+        required=True, max_length=10
+    )  # Set max_length to the maximum possible length
     name = StringField(required=True, max_length=50)
     symbol = StringField(required=True, max_length=5)
     is_predefined = BooleanField(default=False)
@@ -108,10 +112,14 @@ class Currency(BaseDocument):
         # Validate code length based on currency_type
         if self.currency_type == "fiat":
             if len(self.code) != 3:
-                raise ValidationError("Code must be exactly 3 characters for fiat currencies.")
+                raise ValidationError(
+                    "Code must be exactly 3 characters for fiat currencies."
+                )
         elif self.currency_type == "crypto":
             if not (3 <= len(self.code) <= 10):
-                raise ValidationError("Code must be between 3 and 10 characters for crypto currencies.")
+                raise ValidationError(
+                    "Code must be between 3 and 10 characters for crypto currencies."
+                )
 
 
 class CurrencyBalance(EmbeddedDocument):
@@ -218,13 +226,33 @@ class Category(BaseDocument):
     is_predefined = BooleanField(default=False)
     meta = {
         "indexes": [
-            {"fields": ("user_id", "name"), "unique": True},
+            {
+                "fields": ("name",),
+                "unique": True,
+                "partialFilterExpression": {"is_predefined": True},
+            },
+            {
+                "fields": ("user_id", "name"),
+                "unique": True,
+                "partialFilterExpression": {"is_predefined": False},
+            },
         ]
     }
 
     def clean(self):
+        # Ensure user_id is provided for non-predefined categories
         if not self.is_predefined and not self.user_id:
             raise ValidationError("user_id is required for non-predefined categories.")
+
+        # Check if a predefined category with the same name exists
+        if not self.is_predefined:
+            existing_predefined = Category.objects(
+                name=self.name, is_predefined=True
+            ).first()
+            if existing_predefined:
+                raise ValidationError(
+                    f"A predefined category with the name '{self.name}' already exists."
+                )
 
 
 class AssetType(BaseDocument):

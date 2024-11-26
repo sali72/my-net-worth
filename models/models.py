@@ -2,6 +2,11 @@ from datetime import datetime
 
 from bson import ObjectId
 from mongoengine import (
+    CASCADE,
+    DENY,
+    DO_NOTHING,
+    NULLIFY,
+    PULL,
     BooleanField,
     DateTimeField,
     DecimalField,
@@ -15,6 +20,7 @@ from mongoengine import (
     StringField,
     ValidationError,
 )
+
 
 PRECISION_LIMIT_IN_DB = 10
 
@@ -60,17 +66,6 @@ class BaseDocument(Document):
         return value_dict
 
 
-class UserAppData(BaseDocument):
-    base_currency_id = LazyReferenceField("Currency", required=True)
-    net_worth = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
-    assets_value = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
-    wallets_value = DecimalField(
-        default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB
-    )
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
-
-
 class User(BaseDocument):
     name = StringField(required=False, max_length=50)
     username = StringField(required=True, unique=True)
@@ -79,14 +74,11 @@ class User(BaseDocument):
     role = StringField(required=True, choices=["user", "admin"])
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
-    user_app_data = ReferenceField("UserAppData", reverse_delete_rule=4)
 
 
 class Currency(BaseDocument):
-    user_id = ReferenceField("User", required=False)
-    code = StringField(
-        required=True, max_length=10
-    )  # Set max_length to the maximum possible length
+    user_id = ReferenceField("User", required=False, reverse_delete_rule=NULLIFY)
+    code = StringField(required=True, max_length=10)
     name = StringField(required=True, max_length=50)
     symbol = StringField(required=True, max_length=5)
     is_predefined = BooleanField(default=False)
@@ -127,27 +119,34 @@ class CurrencyBalance(EmbeddedDocument):
     balance = DecimalField(min_value=0, required=True, precision=PRECISION_LIMIT_IN_DB)
 
 
+class UserAppData(BaseDocument):
+    user_id = ReferenceField("User", required=True, reverse_delete_rule=CASCADE)
+    base_currency_id = LazyReferenceField(
+        "Currency", required=True, reverse_delete_rule=DENY
+    )
+    net_worth = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
+    assets_value = DecimalField(default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB)
+    wallets_value = DecimalField(
+        default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB
+    )
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+
 class Wallet(BaseDocument):
-    user_id = ReferenceField("User", required=True)
+    user_id = ReferenceField("User", required=True, reverse_delete_rule=CASCADE)
     name = StringField(required=True, max_length=50)
     type = StringField(required=True, choices=["fiat", "crypto"])
     currency_balances = ListField(EmbeddedDocumentField(CurrencyBalance), required=True)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
-    meta = {
-        "indexes": [
-            {
-                "fields": ("user_id", "name"),
-                "unique": True,
-            }
-        ]
-    }
+    meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
 
 
 class CurrencyExchange(BaseDocument):
-    user_id = ReferenceField("User", required=True)
-    from_currency_id = ReferenceField(Currency, required=True)
-    to_currency_id = ReferenceField(Currency, required=True)
+    user_id = ReferenceField("User", required=True, reverse_delete_rule=CASCADE)
+    from_currency_id = ReferenceField(Currency, required=True, reverse_delete_rule=DENY)
+    to_currency_id = ReferenceField(Currency, required=True, reverse_delete_rule=DENY)
     rate = DecimalField(required=True, precision=PRECISION_LIMIT_IN_DB)
     date = DateTimeField(default=datetime.utcnow)
 
@@ -176,12 +175,51 @@ class CurrencyExchange(BaseDocument):
         return super(CurrencyExchange, self).save(*args, **kwargs)
 
 
+class Category(BaseDocument):
+    user_id = ReferenceField(User, required=False, reverse_delete_rule=CASCADE)
+    name = StringField(required=True, max_length=50)
+    type = StringField(required=True, choices=["income", "expense", "transfer"])
+    description = StringField(max_length=255)
+    is_predefined = BooleanField(default=False)
+    meta = {
+        "indexes": [
+            {
+                "fields": ("name",),
+                "unique": True,
+                "partialFilterExpression": {"is_predefined": True},
+            },
+            {
+                "fields": ("user_id", "name"),
+                "unique": True,
+                "partialFilterExpression": {"is_predefined": False},
+            },
+        ]
+    }
+
+    def clean(self):
+        # Ensure user_id is provided for non-predefined categories
+        if not self.is_predefined and not self.user_id:
+            raise ValidationError("user_id is required for non-predefined categories.")
+
+        # Check if a predefined category with the same name exists
+        if not self.is_predefined:
+            existing_predefined = Category.objects(
+                name=self.name, is_predefined=True
+            ).first()
+            if existing_predefined:
+                raise ValidationError(
+                    f"A predefined category with the name '{self.name}' already exists."
+                )
+
+
 class Transaction(BaseDocument):
-    user_id = ReferenceField(User, required=True)
-    from_wallet_id = ReferenceField(Wallet, required=False)
-    to_wallet_id = ReferenceField(Wallet, required=False)
-    category_id = ReferenceField("Category", required=False)
-    currency_id = ReferenceField("Currency", required=True)
+    user_id = ReferenceField(User, required=True, reverse_delete_rule=CASCADE)
+    from_wallet_id = ReferenceField(Wallet, required=False, reverse_delete_rule=CASCADE)
+    to_wallet_id = ReferenceField(Wallet, required=False, reverse_delete_rule=CASCADE)
+    category_id = ReferenceField(
+        "Category", required=False, reverse_delete_rule=NULLIFY
+    )
+    currency_id = ReferenceField("Currency", required=True, reverse_delete_rule=DENY)
     type = StringField(required=True, choices=["income", "expense", "transfer"])
     amount = DecimalField(required=True, precision=PRECISION_LIMIT_IN_DB)
     date = DateTimeField(default=datetime.utcnow)
@@ -218,45 +256,8 @@ class Transaction(BaseDocument):
             raise ValidationError("from_wallet_id should not be provided for incomes.")
 
 
-class Category(BaseDocument):
-    user_id = ReferenceField(User, required=False)
-    name = StringField(required=True, max_length=50)
-    type = StringField(required=True, choices=["income", "expense", "transfer"])
-    description = StringField(max_length=255)
-    is_predefined = BooleanField(default=False)
-    meta = {
-        "indexes": [
-            {
-                "fields": ("name",),
-                "unique": True,
-                "partialFilterExpression": {"is_predefined": True},
-            },
-            {
-                "fields": ("user_id", "name"),
-                "unique": True,
-                "partialFilterExpression": {"is_predefined": False},
-            },
-        ]
-    }
-
-    def clean(self):
-        # Ensure user_id is provided for non-predefined categories
-        if not self.is_predefined and not self.user_id:
-            raise ValidationError("user_id is required for non-predefined categories.")
-
-        # Check if a predefined category with the same name exists
-        if not self.is_predefined:
-            existing_predefined = Category.objects(
-                name=self.name, is_predefined=True
-            ).first()
-            if existing_predefined:
-                raise ValidationError(
-                    f"A predefined category with the name '{self.name}' already exists."
-                )
-
-
 class AssetType(BaseDocument):
-    user_id = ReferenceField(User, required=False)
+    user_id = ReferenceField(User, required=False, reverse_delete_rule=CASCADE)
     name = StringField(required=True, max_length=50)
     description = StringField(required=False, max_length=255)
     is_predefined = BooleanField(default=False)
@@ -278,7 +279,7 @@ class AssetType(BaseDocument):
     def clean(self):
         if not self.is_predefined and not self.user_id:
             raise ValidationError("user_id is required for non-predefined asset types.")
-        
+
         # Check if a predefined category with the same name exists
         if not self.is_predefined:
             existing_predefined = AssetType.objects(
@@ -289,23 +290,19 @@ class AssetType(BaseDocument):
                     f"A predefined category with the name '{self.name}' already exists."
                 )
 
+
 class Asset(BaseDocument):
-    user_id = ReferenceField(User, required=True)
-    asset_type_id = ReferenceField(AssetType, required=False)
-    currency_id = ReferenceField(Currency, required=True)
+    user_id = ReferenceField(User, required=True, reverse_delete_rule=CASCADE)
+    asset_type_id = ReferenceField(
+        AssetType, required=False, reverse_delete_rule=NULLIFY
+    )
+    currency_id = ReferenceField(Currency, required=True, reverse_delete_rule=DENY)
     name = StringField(required=True, max_length=50)
     description = StringField(required=False, max_length=255)
     value = DecimalField(required=True, precision=PRECISION_LIMIT_IN_DB)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
-    meta = {
-        "indexes": [
-            {
-                "fields": ("user_id", "name"),
-                "unique": True,
-            }
-        ]
-    }
+    meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
 
     def clean(self):
         super().clean()  # Call the parent class's clean method if needed

@@ -50,31 +50,31 @@ class UserSchema(BaseModel):
     base_currency_id: str = Field(..., example="currency_id_123")
 
 
-class CurrencyBalanceSchema(BaseModel):
+class BalanceSchema(BaseModel):
     currency_id: str = Field(..., example="currency_id_123")
-    balance: Decimal = Field(..., example=Decimal("100.50"))
+    amount: Decimal = Field(..., example=Decimal("100.50"))
 
-    @field_validator("balance", mode="before")
+    @field_validator("amount", mode="before")
     def validate_balance(cls, v):
-        return check_value_precision(v, "Balance")
+        return check_value_precision(v, "amount")
 
 
 class WalletCreateSchema(BaseModel):
     name: str = Field(..., example="Savings Wallet")
     type: str = Field(..., choices=["fiat", "crypto"], example="fiat")
-    currency_balances: List[CurrencyBalanceSchema] = Field(
+    balances: List[BalanceSchema] = Field(
         ...,
         example=[
-            {"currency_id": "currency_id_123", "balance": Decimal("100.50")},
-            {"currency_id": "currency_id_456", "balance": Decimal("200.75")},
+            {"currency_id": "currency_id_123", "amount": Decimal("100.50")},
+            {"currency_id": "currency_id_456", "amount": Decimal("200.75")},
         ],
     )
 
 
 class WalletUpdateSchema(BaseModel):
     name: Optional[str] = Field(None, example="Savings Wallet")
-    currency_balances: Optional[List[CurrencyBalanceSchema]] = Field(
-        None, example=[{"currency_id": "currency_id_123", "balance": Decimal("150.00")}]
+    balances: Optional[List[BalanceSchema]] = Field(
+        None, example=[{"currency_id": "currency_id_123", "amount": Decimal("150.00")}]
     )
 
 

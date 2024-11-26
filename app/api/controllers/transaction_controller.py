@@ -85,7 +85,7 @@ class TransactionController:
     def _currency_exists_in_wallet(wallet: Wallet, currency_id: str) -> bool:
         return any(
             str(balance.currency_id.pk) == currency_id
-            for balance in wallet.currency_balances
+            for balance in wallet.balances_ids
         )
 
     @classmethod
@@ -160,11 +160,11 @@ class TransactionController:
     ) -> bool:
         from_currency_match = any(
             balance.currency_id.pk == currency_id
-            for balance in from_wallet.currency_balances
+            for balance in from_wallet.balances_ids
         )
         to_currency_match = any(
             balance.currency_id.pk == currency_id
-            for balance in to_wallet.currency_balances
+            for balance in to_wallet.balances_ids
         )
         return from_currency_match and to_currency_match
 
@@ -203,12 +203,12 @@ class TransactionController:
 
     @classmethod
     def _adjust_balance_amount(cls, currency_id, amount, add, wallet):
-        for currency_balance in wallet.currency_balances:
-            if currency_balance.currency_id.pk == currency_id:
+        for balance in wallet.balances:
+            if balance.currency_id.pk == currency_id:
                 if add:
-                    currency_balance.balance += amount
+                    balance.balance += amount
                 else:
-                    currency_balance.balance -= amount
+                    balance.balance -= amount
                 break
 
     @classmethod
@@ -227,9 +227,9 @@ class TransactionController:
     async def _has_sufficient_balance(
         cls, wallet: Wallet, currency_id: str, amount: float
     ) -> bool:
-        for currency_balance in wallet.currency_balances:
-            if currency_balance.currency_id.pk == currency_id:
-                return currency_balance.balance >= amount
+        for balance in wallet.balances_ids:
+            if balance.currency_id.pk == currency_id:
+                return balance.balance >= amount
         return False
 
     @classmethod

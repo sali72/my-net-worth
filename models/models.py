@@ -113,11 +113,6 @@ class Currency(BaseDocument):
                 )
 
 
-class CurrencyBalance(EmbeddedDocument):
-    currency_id = LazyReferenceField("Currency", required=True, unique=True)
-    balance = DecimalField(min_value=0, required=True, precision=PRECISION_LIMIT_IN_DB)
-
-
 class UserAppData(BaseDocument):
     user_id = ReferenceField(
         "User", required=True, unique=True, reverse_delete_rule=CASCADE
@@ -134,15 +129,41 @@ class UserAppData(BaseDocument):
     updated_at = DateTimeField(default=datetime.utcnow)
 
 
+class Balance(BaseDocument):
+    wallet_id = LazyReferenceField("Wallet", required=True)
+    currency_id = LazyReferenceField(
+        "Currency", required=True, reverse_delete_rule=DENY
+    )
+    amount = DecimalField(min_value=0, required=True, precision=PRECISION_LIMIT_IN_DB)
+    meta = {"indexes": [{"fields": ("wallet_id", "currency_id"), "unique": True}]}
+
+    def save(self, *args, **kwargs):
+        """Override save to update the Wallet's balances_ids."""
+        is_new = self.pk is None
+        wallet = Wallet.objects.get(id=self.wallet_id.id)
+        super(Balance, self).save(*args, **kwargs)
+        if is_new and self.id not in wallet.balances_ids:
+            wallet.balances_ids.append(self.id)
+            wallet.save()
+
+    def delete(self, *args, **kwargs):
+        """Override delete to remove the Balance from the Wallet's balances_ids."""
+        wallet = Wallet.objects.get(id=self.wallet_id.id)
+        super(Balance, self).delete(*args, **kwargs)
+        if self.id in wallet.balances_ids:
+            wallet.balances_ids.remove(self.id)
+            wallet.save()
+
 class Wallet(BaseDocument):
     user_id = ReferenceField("User", required=True, reverse_delete_rule=CASCADE)
     name = StringField(required=True, max_length=50)
     type = StringField(required=True, choices=["fiat", "crypto"])
-    currency_balances = ListField(EmbeddedDocumentField(CurrencyBalance), required=True)
+    balances_ids = ListField(ReferenceField(Balance), required=False)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
     meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
 
+Wallet.register_delete_rule(Balance, 'wallet_id', CASCADE)
 
 class CurrencyExchange(BaseDocument):
     user_id = ReferenceField("User", required=True, reverse_delete_rule=CASCADE)

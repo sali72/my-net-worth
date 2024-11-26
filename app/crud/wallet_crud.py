@@ -2,7 +2,7 @@ from datetime import datetime
 from fastapi import HTTPException, status
 from mongoengine import DoesNotExist, QuerySet
 
-from models.models import Wallet, CurrencyBalance
+from models.models import Wallet, Balance
 
 
 class WalletCRUD:
@@ -35,7 +35,7 @@ class WalletCRUD:
     ):
         wallet = await cls.get_one_by_user(wallet_id, user_id)
         cls.__update_wallet_fields(wallet, updated_wallet)
-        cls.__update_currency_balances(wallet, updated_wallet)
+        cls.__update_balances(wallet, updated_wallet)
         cls.__update_timestamp(wallet)
         wallet.save()
 
@@ -45,12 +45,12 @@ class WalletCRUD:
             wallet.name = updated_wallet.name
 
     @staticmethod
-    def __update_currency_balances(wallet: Wallet, updated_wallet: Wallet):
+    def __update_balances(wallet: Wallet, updated_wallet: Wallet):
         # it does not add or remove a currency balance
-        if updated_wallet.currency_balances is not None:
-            for updated_balance in updated_wallet.currency_balances:
+        if updated_wallet.balances_ids is not None:
+            for updated_balance in updated_wallet.balances_ids:
                 match_found = False
-                for existing_balance in wallet.currency_balances:
+                for existing_balance in wallet.balances_ids:
                     if (
                         existing_balance.currency_id.pk
                         == updated_balance.currency_id.pk
@@ -77,20 +77,20 @@ class WalletCRUD:
         return result > 0
 
     @classmethod
-    async def add_currency_balance_to_wallet(
-        cls, user_id: str, wallet_id: str, currency_balance: CurrencyBalance
+    async def add_balance_to_wallet(
+        cls, user_id: str, wallet_id: str, balance: Balance
     ) -> Wallet:
         wallet = await cls.get_one_by_user(wallet_id, user_id)
-        wallet.currency_balances.append(currency_balance)
+        wallet.balances_ids.append(balance)
         wallet.save()
         return wallet
 
     @classmethod
-    async def get_currency_balance(
+    async def get_balance(
         cls, user_id: str, wallet_id: str, currency_id: str
-    ) -> CurrencyBalance:
+    ) -> Balance:
         wallet = await cls.get_one_by_user(wallet_id, user_id)
-        for balance in wallet.currency_balances:
+        for balance in wallet.balances_ids:
             if str(balance.currency_id.pk) == currency_id:
                 return balance
         raise HTTPException(
@@ -99,14 +99,14 @@ class WalletCRUD:
         )
 
     @classmethod
-    async def remove_currency_balance_from_wallet(
+    async def remove_balance_from_wallet(
         cls, user_id: str, wallet_id: str, currency_id: str
     ) -> Wallet:
         wallet = await cls.get_one_by_user(wallet_id, user_id)
 
-        for existing_balance in wallet.currency_balances:
+        for existing_balance in wallet.balances_ids:
             if str(existing_balance.currency_id.pk) == currency_id:
-                wallet.currency_balances.remove(existing_balance)
+                wallet.balances_ids.remove(existing_balance)
                 wallet.save()
                 return wallet
 

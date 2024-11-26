@@ -55,24 +55,23 @@ class AuthController:
 
     @classmethod
     async def __create_user_model_atomic(cls, user_schema: UserSchema, hashed_password):
-        user_app_data = UserAppData(base_currency_id=user_schema.base_currency_id)
+        user_model = User(
+            username=user_schema.username,
+            hashed_password=hashed_password,
+            email=user_schema.email,
+            role=Role.USER.value,
+        )
+        user_in_db = await cls.user_crud.create_one(user_model)
 
-        user_app_data_in_db =await UserAppDataCRUD.create_one(user_app_data)
         try:
-            user_model = User(
-                username=user_schema.username,
-                hashed_password=hashed_password,
-                email=user_schema.email,
-                role=Role.USER.value,
-                user_app_data=user_app_data,
+            user_app_data = UserAppData(
+                user_id=user_in_db, base_currency_id=user_schema.base_currency_id
             )
-            await cls.user_crud.create_one(user_model)
+            await UserAppDataCRUD.create_one(user_app_data)
+
         except Exception as e:
-            await UserAppDataCRUD.delete_one(user_app_data_in_db)
+            await UserCRUD.delete_one(user_in_db)
             raise e
-        
-        
-        
 
     @classmethod
     async def __check_password_strength(cls, password, username):

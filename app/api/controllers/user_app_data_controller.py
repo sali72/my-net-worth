@@ -2,8 +2,8 @@ from mongoengine import ValidationError
 
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
-from app.crud.wallet_crud import WalletCRUD
 from app.crud.user_app_data_crud import UserAppDataCRUD
+from app.crud.wallet_crud import WalletCRUD
 from models.models import Currency, User, UserAppData
 
 
@@ -26,15 +26,17 @@ class UserAppDataController:
             user.id, current_base_currency, currency_to_set
         )
 
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
         updated_currency = await cls._set_new_base_currency(
-            user.user_app_data, currency_to_set
+            user_app_data, currency_to_set
         )
 
         return updated_currency.to_dict()
 
     @classmethod
     async def _get_base_currency(cls, user):
-        current_base_currency_id = user.user_app_data.base_currency_id.pk
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
+        current_base_currency_id = user_app_data.base_currency_id.pk
         current_base_currency = await CurrencyCRUD.get_one_by_user(
             current_base_currency_id, user.id
         )
@@ -91,13 +93,14 @@ class UserAppDataController:
 
     @classmethod
     async def update_user_app_data_net_worth(cls, user, net_worth):
-        user_app_data: UserAppData = user.user_app_data
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
         user_app_data.net_worth = net_worth
         updated_data = await UserAppDataCRUD.update_one_by_id(
-            user.user_app_data.id, user_app_data
+            user_app_data.id, user_app_data
         )
         return updated_data.to_dict()
 
     @classmethod
     async def get_user_app_data(cls, user: User) -> dict:
-        return user.user_app_data.to_dict()
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
+        return user_app_data.to_dict()

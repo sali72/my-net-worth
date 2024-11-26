@@ -1,13 +1,9 @@
 from typing import List
 
-from mongoengine import DoesNotExist, ValidationError
+from mongoengine import ValidationError
 
-from app.api.controllers.asset_controller import AssetController
 from app.crud.currency_crud import CurrencyCRUD
-from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
-from app.crud.wallet_crud import WalletCRUD
-from app.crud.user_app_data_crud import UserAppDataCRUD
-from models.models import Currency, User, UserAppData
+from models.models import Currency, User
 from models.schemas import CurrencyCreateSchema, CurrencyUpdateSchema
 
 

@@ -5,9 +5,9 @@ from fastapi import HTTPException, status
 
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
-from app.crud.wallet_crud import WalletCRUD
 from app.crud.user_app_data_crud import UserAppDataCRUD
-from models.models import Currency, CurrencyBalance, User, Wallet, UserAppData
+from app.crud.wallet_crud import WalletCRUD
+from models.models import Currency, CurrencyBalance, User, UserAppData, Wallet
 from models.schemas import CurrencyBalanceSchema, WalletCreateSchema, WalletUpdateSchema
 
 
@@ -123,8 +123,8 @@ class WalletController:
     async def calculate_total_wallet_value(cls, user: User) -> Decimal:
         wallets = await WalletCRUD.get_all_by_user_id_optional(user.id)
 
-        base_currency_id = await UserAppDataCRUD.get_base_currency_id(
-            user.user_app_data.id
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
+            user.id
         )
 
         total_value = Decimal(0)
@@ -139,10 +139,10 @@ class WalletController:
 
     @classmethod
     async def _update_user_app_data_wallets_value(cls, user, total_value):
-        user_app_data: UserAppData = user.user_app_data
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
         user_app_data.wallets_value = total_value
         user_app_data.net_worth = user_app_data.assets_value + total_value
-        await UserAppDataCRUD.update_one_by_id(user.user_app_data.id, user_app_data)
+        await UserAppDataCRUD.update_one_by_id(user_app_data.id, user_app_data)
 
     @classmethod
     async def _calculate_wallet_value(
@@ -183,9 +183,8 @@ class WalletController:
             user.id, wallet_id, new_balance
         )
         balance_value_to_add = await cls._calculate_balance_value(new_balance, user)
-        await cls._add_balance_to_user_app_data(
-            user.user_app_data.id, balance_value_to_add
-        )
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
+        await cls._add_balance_to_user_app_data(user_app_data.id, balance_value_to_add)
 
         return updated_wallet.to_dict()
 
@@ -234,8 +233,9 @@ class WalletController:
         balance_value_to_remove = await cls._calculate_balance_value(
             currency_balance_to_remove, user
         )
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
         await cls._reduce_balance_from_user_app_data(
-            user.user_app_data.id, balance_value_to_remove
+            user_app_data.id, balance_value_to_remove
         )
         updated_wallet = await WalletCRUD.remove_currency_balance_from_wallet(
             user.id, wallet_id, currency_id
@@ -247,8 +247,8 @@ class WalletController:
     async def _calculate_balance_value(
         cls, currency_balance: CurrencyBalance, user: User
     ) -> Decimal:
-        base_currency_id = await UserAppDataCRUD.get_base_currency_id(
-            user.user_app_data.id
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
+            user.id
         )
         return await cls._convert_balance_value_to_base_currency(
             currency_balance.balance,

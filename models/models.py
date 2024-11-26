@@ -21,7 +21,6 @@ from mongoengine import (
     ValidationError,
 )
 
-
 PRECISION_LIMIT_IN_DB = 10
 
 
@@ -120,7 +119,9 @@ class CurrencyBalance(EmbeddedDocument):
 
 
 class UserAppData(BaseDocument):
-    user_id = ReferenceField("User", required=True, reverse_delete_rule=CASCADE)
+    user_id = ReferenceField(
+        "User", required=True, unique=True, reverse_delete_rule=CASCADE
+    )
     base_currency_id = LazyReferenceField(
         "Currency", required=True, reverse_delete_rule=DENY
     )

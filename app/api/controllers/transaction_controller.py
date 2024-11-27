@@ -310,11 +310,7 @@ class TransactionController:
         cls, transaction_schema: TransactionUpdateSchema
     ) -> Transaction:
         return Transaction(
-            from_wallet_id=transaction_schema.from_wallet_id,
-            to_wallet_id=transaction_schema.to_wallet_id,
             category_id=transaction_schema.category_id,
-            currency_id=transaction_schema.currency_id,
-            type=transaction_schema.type,
             amount=transaction_schema.amount,
             date=transaction_schema.date,
             description=transaction_schema.description,

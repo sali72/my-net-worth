@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, Path, Query
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.transaction_controller import TransactionController
 from app.api.controllers.wallet_controller import WalletController
-from models.models import Transaction
 from models.schemas import ErrorResponseModel, ResponseSchema
 from models.schemas import Role as R
 from models.schemas import (
@@ -103,6 +102,8 @@ async def update_transaction_route(
     updated_transaction = await TransactionController.update_transaction(
         transaction_id, transaction_schema, user.id
     )
+    await WalletController.calculate_total_wallet_value(user)
+    
     return ResponseSchema(
         data={"transaction": updated_transaction},
         message="Transaction updated successfully",

@@ -307,3 +307,18 @@ class WalletController:
         await cls._add_amount_to_user_app_data(
             user_app_data.id, amount
         )
+    
+    @classmethod
+    async def reduce_value_from_user_app_data(
+        cls, user: User, amount: Decimal, currency_id: str
+    ):
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
+            user.id
+        )
+        await cls._convert_value_to_base_currency(
+            amount, currency_id, base_currency_id, user.id
+        )
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
+        await cls._reduce_amount_from_user_app_data(
+            user_app_data.id, amount
+        )

@@ -367,12 +367,12 @@ class TransactionController:
         )
 
     @classmethod
-    async def delete_transaction(cls, transaction_id: str, user_id: str) -> bool:
+    async def delete_transaction(cls, transaction_id: str, user_id: str) -> Transaction:
         transaction = await TransactionCRUD.get_one_by_user(transaction_id, user_id)
         await TransactionCRUD.delete_one_by_user(transaction_id, user_id)
         try:
             await cls._reverse_transaction_effects(transaction, user_id)
-            return True
+            return transaction
         except Exception as e:
             await TransactionCRUD.create_one(transaction)
             raise e

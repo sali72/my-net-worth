@@ -114,5 +114,9 @@ async def delete_transaction_route(
     transaction_id: str = Path(..., description="The ID of the transaction to delete"),
     user=Depends(has_role(R.USER)),
 ):
-    success = await TransactionController.delete_transaction(transaction_id, user.id)
+    transaction = await TransactionController.delete_transaction(transaction_id, user.id)
+    
+    await WalletController.reduce_value_from_user_app_data(
+        user, transaction.amount, transaction.currency_id.id
+    )
     return ResponseSchema(message="Transaction deleted successfully")

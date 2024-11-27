@@ -17,7 +17,7 @@ class TransactionController:
     @classmethod
     async def create_transaction(
         cls, transaction_schema: TransactionCreateSchema, user: User
-    ) -> dict:
+    ) -> Transaction:
         await cls._validate_transaction_data(transaction_schema, user.id)
         transaction = cls._create_transaction_obj_to_create(transaction_schema, user.id)
 
@@ -25,7 +25,7 @@ class TransactionController:
         # make sure updating balances occur if transaction is created
         try:
             await cls._update_wallet_balances(transaction_in_db, user.id)
-            return transaction_in_db.to_dict()
+            return transaction_in_db
         except Exception as e:
             await TransactionCRUD.delete_one_by_user(transaction_in_db.id, user.id)
             raise e

@@ -1,10 +1,9 @@
-from datetime import datetime
-from typing import Optional
-
 from fastapi import APIRouter, Depends, Path, Query
 
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.transaction_controller import TransactionController
+from app.api.controllers.wallet_controller import WalletController
+from models.models import Transaction
 from models.schemas import ErrorResponseModel, ResponseSchema
 from models.schemas import Role as R
 from models.schemas import (
@@ -27,11 +26,15 @@ router = APIRouter(prefix="/transactions", tags=["Transaction"])
 async def create_transaction_route(
     transaction_schema: TransactionCreateSchema, user=Depends(has_role(R.USER))
 ):
-    transaction_id = await TransactionController.create_transaction(
+    transaction = await TransactionController.create_transaction(
         transaction_schema, user
     )
+    await WalletController.add_value_to_user_app_data(
+        user, transaction.amount, transaction.currency_id.id
+    )
+
     message = "Transaction created successfully"
-    data = {"id": transaction_id}
+    data = {"result": transaction.to_dict()}
     return ResponseSchema(data=data, message=message)
 
 

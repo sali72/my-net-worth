@@ -184,23 +184,24 @@ class WalletController:
         cls, wallet: Wallet, base_currency_id: str, user_id: str
     ) -> Decimal:
         total_value = Decimal(0)
-        for balance in wallet.balances_ids:
-            total_value += await cls._convert_balance_value_to_base_currency(
+        balances: List[Balance] = wallet.balances_ids
+        for balance in balances:
+            total_value += await cls._convert_value_to_base_currency(
                 balance.amount, balance.currency_id.id, base_currency_id, user_id
             )
         return total_value
 
     @classmethod
-    async def _convert_balance_value_to_base_currency(
-        cls, balance: Decimal, currency_id: str, base_currency_id: str, user_id: str
+    async def _convert_value_to_base_currency(
+        cls, amount: Decimal, currency_id: str, base_currency_id: str, user_id: str
     ) -> Decimal:
         if currency_id == base_currency_id:
-            return balance
+            return amount
 
         exchange_rate = await CurrencyExchangeCRUD.get_exchange_rate(
             user_id, currency_id, base_currency_id
         )
-        return balance * exchange_rate
+        return amount * exchange_rate
 
     @classmethod
     async def add_balance(
@@ -272,13 +273,15 @@ class WalletController:
         base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
             user.id
         )
-        return await cls._convert_balance_value_to_base_currency(
+        return await cls._convert_value_to_base_currency(
             balance.amount,
             balance.currency_id.pk,
             base_currency_id,
             user.id,
         )
 
+    # TODO: refactor and move user app data related only methods to
+    # relevant file
     @classmethod
     async def _reduce_amount_from_user_app_data(
         cls, user_app_data_id: str, amount: Decimal
@@ -287,3 +290,20 @@ class WalletController:
         user_app_data.wallets_value -= amount
         user_app_data.net_worth -= amount
         await UserAppDataCRUD.update_one_by_id(user_app_data_id, user_app_data)
+
+    # TODO: refactor and move user app data related only methods to
+    # relevant file
+    @classmethod
+    async def add_value_to_user_app_data(
+        cls, user: User, amount: Decimal, currency_id: str
+    ):
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
+            user.id
+        )
+        await cls._convert_value_to_base_currency(
+            amount, currency_id, base_currency_id, user.id
+        )
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
+        await cls._add_amount_to_user_app_data(
+            user_app_data.id, amount
+        )

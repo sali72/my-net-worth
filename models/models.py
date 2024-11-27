@@ -4,7 +4,6 @@ from bson import ObjectId
 from mongoengine import (
     CASCADE,
     DENY,
-    DO_NOTHING,
     NULLIFY,
     PULL,
     BooleanField,
@@ -12,8 +11,6 @@ from mongoengine import (
     DecimalField,
     Document,
     EmailField,
-    EmbeddedDocument,
-    EmbeddedDocumentField,
     LazyReferenceField,
     ListField,
     ReferenceField,
@@ -146,24 +143,21 @@ class Balance(BaseDocument):
             wallet.balances_ids.append(self.id)
             wallet.save()
 
-    def delete(self, *args, **kwargs):
-        """Override delete to remove the Balance from the Wallet's balances_ids."""
-        wallet = Wallet.objects.get(id=self.wallet_id.id)
-        super(Balance, self).delete(*args, **kwargs)
-        if self.id in wallet.balances_ids:
-            wallet.balances_ids.remove(self.id)
-            wallet.save()
 
 class Wallet(BaseDocument):
     user_id = ReferenceField("User", required=True, reverse_delete_rule=CASCADE)
     name = StringField(required=True, max_length=50)
     type = StringField(required=True, choices=["fiat", "crypto"])
-    balances_ids = ListField(ReferenceField(Balance), required=False)
+    balances_ids = ListField(
+        ReferenceField(Balance, reverse_delete_rule=PULL), required=False
+    )
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
     meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
 
-Wallet.register_delete_rule(Balance, 'wallet_id', CASCADE)
+
+Wallet.register_delete_rule(Balance, "wallet_id", CASCADE)
+
 
 class CurrencyExchange(BaseDocument):
     user_id = ReferenceField("User", required=True, reverse_delete_rule=CASCADE)

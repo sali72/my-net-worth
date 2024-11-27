@@ -1,8 +1,10 @@
 from datetime import datetime
+from typing import List
+
 from fastapi import HTTPException, status
 from mongoengine import DoesNotExist, QuerySet
-
-from models.models import Wallet, Balance
+from app.crud.balance_crud import BalanceCRUD
+from models.models import Balance, Wallet
 
 
 class WalletCRUD:
@@ -35,7 +37,7 @@ class WalletCRUD:
     ):
         wallet = await cls.get_one_by_user(wallet_id, user_id)
         cls.__update_wallet_fields(wallet, updated_wallet)
-        cls.__update_balances(wallet, updated_wallet)
+        await cls.__update_balances(wallet, updated_wallet)
         cls.__update_timestamp(wallet)
         wallet.save()
 
@@ -45,17 +47,23 @@ class WalletCRUD:
             wallet.name = updated_wallet.name
 
     @staticmethod
-    def __update_balances(wallet: Wallet, updated_wallet: Wallet):
+    async def __update_balances(wallet: Wallet, updated_wallet: Wallet):
+        # this method only can update a balance
         # it does not add or remove a currency balance
         if updated_wallet.balances_ids is not None:
-            for updated_balance in updated_wallet.balances_ids:
+            updated_balances: List[Balance] = updated_wallet.balances_ids
+            for updated_balance in updated_balances:
                 match_found = False
-                for existing_balance in wallet.balances_ids:
+                balances: List[Balance] = wallet.balances_ids
+                for existing_balance in balances:
                     if (
                         existing_balance.currency_id.pk
                         == updated_balance.currency_id.pk
                     ):
-                        existing_balance.balance = updated_balance.balance
+                        new_amount = updated_balance.amount
+                        await BalanceCRUD.update_one(
+                            existing_balance, {"amount": new_amount}
+                        )
                         match_found = True
                 if not match_found:
                     raise HTTPException(
@@ -90,12 +98,14 @@ class WalletCRUD:
         cls, user_id: str, wallet_id: str, currency_id: str
     ) -> Balance:
         wallet = await cls.get_one_by_user(wallet_id, user_id)
-        for balance in wallet.balances_ids:
-            if str(balance.currency_id.pk) == currency_id:
+        balances: List[Balance] = wallet.balances_ids
+        for balance in balances:
+            if str(balance.currency_id.id) == currency_id:
                 return balance
+
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Currency balance not found in the wallet",
+            detail=f"Currency balance not found in the wallet.",
         )
 
     @classmethod

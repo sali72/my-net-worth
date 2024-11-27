@@ -58,7 +58,7 @@ class UserAppDataController:
         held_currency_ids = {
             balance.currency_id.id
             for wallet in wallets
-            for balance in wallet.balances
+            for balance in wallet.balances_ids
         }
 
         # Check for exchange rates between held currencies and the new base currency

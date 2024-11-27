@@ -62,7 +62,7 @@ class BalanceSchema(BaseModel):
 class WalletCreateSchema(BaseModel):
     name: str = Field(..., example="Savings Wallet")
     type: str = Field(..., choices=["fiat", "crypto"], example="fiat")
-    balances: List[BalanceSchema] = Field(
+    balances_ids: List[BalanceSchema] = Field(
         ...,
         example=[
             {"currency_id": "currency_id_123", "amount": Decimal("100.50")},
@@ -73,7 +73,7 @@ class WalletCreateSchema(BaseModel):
 
 class WalletUpdateSchema(BaseModel):
     name: Optional[str] = Field(None, example="Savings Wallet")
-    balances: Optional[List[BalanceSchema]] = Field(
+    balances_ids: Optional[List[BalanceSchema]] = Field(
         None, example=[{"currency_id": "currency_id_123", "amount": Decimal("150.00")}]
     )
 

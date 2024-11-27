@@ -163,8 +163,7 @@ class TransactionController:
             for balance in from_wallet.balances_ids
         )
         to_currency_match = any(
-            balance.currency_id.pk == currency_id
-            for balance in to_wallet.balances_ids
+            balance.currency_id.pk == currency_id for balance in to_wallet.balances_ids
         )
         return from_currency_match and to_currency_match
 
@@ -202,13 +201,13 @@ class TransactionController:
         await WalletCRUD.update_one_by_user(user_id, wallet_id, wallet)
 
     @classmethod
-    def _adjust_balance_amount(cls, currency_id, amount, add, wallet):
-        for balance in wallet.balances:
+    def _adjust_balance_amount(cls, currency_id, amount, add, wallet: Wallet):
+        for balance in wallet.balances_ids:
             if balance.currency_id.pk == currency_id:
                 if add:
-                    balance.balance += amount
+                    balance.amount += amount
                 else:
-                    balance.balance -= amount
+                    balance.amount -= amount
                 break
 
     @classmethod
@@ -229,7 +228,7 @@ class TransactionController:
     ) -> bool:
         for balance in wallet.balances_ids:
             if balance.currency_id.pk == currency_id:
-                return balance.balance >= amount
+                return balance.amount >= amount
         return False
 
     @classmethod

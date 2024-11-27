@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from typing import List
 from bson import ObjectId
 from mongoengine import (
     CASCADE,
@@ -154,6 +154,12 @@ class Wallet(BaseDocument):
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
     meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
+
+    def to_dict(self):
+        doc_dict = super().to_dict()
+        balances: List[Balance] = self.balances_ids
+        doc_dict["balances_ids"] = [balance.to_dict() for balance in balances]
+        return doc_dict
 
 
 Wallet.register_delete_rule(Balance, "wallet_id", CASCADE)

@@ -76,7 +76,7 @@ async def delete_wallet_route(
     wallet_id: str = Path(..., description="The ID of the wallet to delete"),
     user=Depends(has_role(R.USER)),
 ):
-    success = await WalletController.delete_wallet(wallet_id, user.id)
+    success = await WalletController.delete_wallet(wallet_id, user)
     return ResponseSchema(message="Wallet deleted successfully")
 
 @router.post("/{wallet_id}/currency-balance", response_model=ResponseSchema)

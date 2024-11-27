@@ -29,11 +29,13 @@ class WalletController:
         wallet_with_balances = await WalletCRUD.get_one_by_id(wallet_in_db.id)
 
         await cls._add_wallet_value_to_user_app_data(user, wallet_with_balances)
-        
+
         return wallet_with_balances.to_dict()
 
     @classmethod
-    async def _add_wallet_value_to_user_app_data(cls, user, wallet_with_balances):
+    async def _add_wallet_value_to_user_app_data(
+        cls, user: User, wallet_with_balances: Wallet
+    ):
         base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
             user.id
         )
@@ -133,9 +135,24 @@ class WalletController:
         return updated_wallet
 
     @classmethod
-    async def delete_wallet(cls, wallet_id: str, user_id: str) -> bool:
-        await WalletCRUD.delete_one_by_user(user_id, wallet_id)
+    async def delete_wallet(cls, wallet_id: str, user: User) -> bool:
+        wallet_to_delete: Wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
+        await cls._reduce_wallet_value_from_user_app_data(user, wallet_to_delete)
+        await WalletCRUD.delete_one_by_user(user.id, wallet_id)
         return True
+
+    @classmethod
+    async def _reduce_wallet_value_from_user_app_data(
+        cls, user: User, wallet_with_balances: Wallet
+    ):
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
+            user.id
+        )
+        wallet_value = await cls._calculate_wallet_value(
+            wallet_with_balances, base_currency_id, user.id
+        )
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
+        await cls._reduce_amount_from_user_app_data(user_app_data.id, wallet_value)
 
     @classmethod
     async def calculate_total_wallet_value(cls, user: User) -> Decimal:
@@ -225,9 +242,7 @@ class WalletController:
         )
 
     @classmethod
-    async def _add_amount_to_user_app_data(
-        cls, user_app_data_id: str, amount: Decimal
-    ):
+    async def _add_amount_to_user_app_data(cls, user_app_data_id: str, amount: Decimal):
         user_app_data = await UserAppDataCRUD.get_one_by_id(user_app_data_id)
         user_app_data.wallets_value += amount
         user_app_data.net_worth += amount

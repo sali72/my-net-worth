@@ -119,7 +119,7 @@ class UserAppDataController:
         )
 
     @classmethod
-    async def add_value_to_user_app_data(
+    async def add_value_to_user_app_data_wallets_value(
         cls, user: User, amount: Decimal, currency_id: str
     ):
         converted_amount = await cls._convert_to_base_currency(
@@ -131,7 +131,7 @@ class UserAppDataController:
         )
 
     @classmethod
-    async def reduce_value_from_user_app_data(
+    async def reduce_value_from_user_app_data_wallets_value(
         cls, user: User, amount: Decimal, currency_id: str
     ):
         converted_amount = await cls._convert_to_base_currency(
@@ -139,5 +139,29 @@ class UserAppDataController:
         )
 
         await UserAppDataCRUD.reduce_amount_from_user_app_data_wallets_value(
+            user.id, converted_amount
+        )
+
+    @classmethod
+    async def add_value_to_user_app_data_assets_value(
+        cls, user: User, amount: Decimal, currency_id: str
+    ):
+        converted_amount = await cls._convert_to_base_currency(
+            user.id, amount, currency_id
+        )
+
+        await UserAppDataCRUD.add_amount_to_user_app_data_assets_value(
+            user.id, converted_amount
+        )
+
+    @classmethod
+    async def reduce_value_from_user_app_data_assets_value(
+        cls, user: User, amount: Decimal, currency_id: str
+    ):
+        converted_amount = await cls._convert_to_base_currency(
+            user.id, amount, currency_id
+        )
+
+        await UserAppDataCRUD.reduce_amount_from_user_app_data_assets_value(
             user.id, converted_amount
         )

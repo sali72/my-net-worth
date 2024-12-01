@@ -87,7 +87,9 @@ class UserAppDataCRUD:
         user_app_data.save()
 
     @classmethod
-    async def add_amount_to_user_app_data_wallets_value(cls, user_id: str, amount: Decimal):
+    async def add_amount_to_user_app_data_wallets_value(
+        cls, user_id: str, amount: Decimal
+    ):
         user_app_data = await cls.get_one_by_user_id(user_id)
         user_app_data.wallets_value += amount
         user_app_data.net_worth += amount
@@ -95,9 +97,31 @@ class UserAppDataCRUD:
         user_app_data.save()
 
     @classmethod
-    async def reduce_amount_from_user_app_data_wallets_value(cls, user_id: str, amount: Decimal):
+    async def reduce_amount_from_user_app_data_wallets_value(
+        cls, user_id: str, amount: Decimal
+    ):
         user_app_data = await cls.get_one_by_user_id(user_id)
         user_app_data.wallets_value -= amount
+        user_app_data.net_worth -= amount
+        user_app_data.clean()
+        user_app_data.save()
+
+    @classmethod
+    async def add_amount_to_user_app_data_assets_value(
+        cls, user_id: str, amount: Decimal
+    ):
+        user_app_data = await cls.get_one_by_user_id(user_id)
+        user_app_data.assets_value += amount
+        user_app_data.net_worth += amount
+        user_app_data.clean()
+        user_app_data.save()
+
+    @classmethod
+    async def reduce_amount_from_user_app_data_assets_value(
+        cls, user_id: str, amount: Decimal
+    ):
+        user_app_data = await cls.get_one_by_user_id(user_id)
+        user_app_data.assets_value -= amount
         user_app_data.net_worth -= amount
         user_app_data.clean()
         user_app_data.save()

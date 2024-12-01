@@ -136,6 +136,20 @@ class AuthController:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
+    @classmethod
+    async def update_user_credentials(cls, current_user: User, update_data: dict) -> User:
+        updated_fields = update_data
+
+        if "password" in updated_fields:
+            updated_fields["hashed_password"] = cls.pwd_context.hash(
+                updated_fields.pop("password")
+            )
+
+        try:
+            return await cls.user_crud.update_one(current_user.username, updated_fields)
+        except Exception as e:
+            raise e
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 

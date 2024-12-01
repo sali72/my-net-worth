@@ -21,7 +21,9 @@ def check_value_precision(value: Decimal, field_name: str) -> Decimal:
     if value == 0:
         raise ValueError(f"{field_name} cannot be zero")
     if value.as_tuple().exponent < -MAX_DECIMAL_PART:
-        raise ValueError(f"{field_name} cannot have more than {MAX_DECIMAL_PART} decimal places")
+        raise ValueError(
+            f"{field_name} cannot have more than {MAX_DECIMAL_PART} decimal places"
+        )
     if value >= MAX_INTEGER_PART:
         raise ValueError(
             f"{field_name} cannot have an integer part greater than {MAX_INTEGER_PART}"
@@ -50,6 +52,13 @@ class UserSchema(BaseModel):
     email: EmailStr = Field(None, example="johndoe@example.com")
     password: str = Field(None, example="strongpassword123")
     base_currency_id: str = Field(..., example="currency_id_123")
+
+
+class UpdateUserSchema(BaseModel):
+    name: str = Field(None, example="John Doe")
+    username: str = Field(None, example="newusername")
+    email: EmailStr = Field(None, example="newemail@example.com")
+    password: str = Field(None, example="newstrongpassword123")
 
 
 class BalanceSchema(BaseModel):
@@ -289,9 +298,7 @@ class TransactionStatisticsParams(BaseModel):
 
 class CategoryCreateSchema(BaseModel):
     name: str = Field(..., max_length=50, example="Groceries")
-    type: str = Field(
-        ..., choices=["income", "expense", "transfer"], example="expense"
-    )
+    type: str = Field(..., choices=["income", "expense", "transfer"], example="expense")
     description: Optional[str] = Field(
         None, max_length=255, example="Necessary Grocery shoppings"
     )

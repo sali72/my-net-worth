@@ -21,7 +21,7 @@ class UserCRUD:
 
     async def update_one(self, username: str, updated_user: User) -> int:
         user = await self.get_one_by_username(username=username)
-        user.update(updated_user)
+        user.update(**updated_user)
         return user.save()
 
     async def delete_one(self, username: str) -> int:

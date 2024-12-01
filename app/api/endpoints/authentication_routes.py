@@ -1,17 +1,17 @@
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, Field
+from fastapi import APIRouter, Depends, status
+from fastapi.security import OAuth2PasswordRequestForm
 
-from app.api.controllers.auth_controller import AuthController, get_current_user
-from app.crud.user_crud import UserCRUD
-from models.schemas import ResponseSchema, Token, UserSchema, UpdateUserSchema
+from app.api.controllers.auth_controller import (
+    AuthController,
+    get_current_user,
+    oauth2_scheme,
+)
+from models.schemas import ResponseSchema, Token, UpdateUserSchema, UserSchema
 
 load_dotenv()
 
 router = APIRouter(tags=["Authentication"])
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
 @router.post(
@@ -40,6 +40,19 @@ async def login_for_access_token(
         form_data.username, form_data.password
     )
     return Token(access_token=access_token, token_type="bearer")
+
+
+@router.get(
+    "/user",
+    response_model=ResponseSchema,
+    response_description="Get current user data",
+    status_code=status.HTTP_200_OK,
+)
+async def get_user_data(token: str = Depends(oauth2_scheme)):
+    current_user = await get_current_user(token)
+
+    message = "User data retrieved successfully"
+    return ResponseSchema(data=current_user.to_dict(), message=message)
 
 
 @router.put(

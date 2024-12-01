@@ -15,12 +15,12 @@ from models.schemas import AssetCreateSchema, AssetFilterSchema, AssetUpdateSche
 class AssetController:
 
     @classmethod
-    async def create_asset(cls, asset_schema: AssetCreateSchema, user: User) -> dict:
+    async def create_asset(cls, asset_schema: AssetCreateSchema, user: User) -> Asset:
         await cls._validate_asset_data(asset_schema, user.id)
         asset = cls._create_asset_obj_to_create(asset_schema, user.id)
 
-        asset_in_db: Asset = await AssetCRUD.create_one(asset)
-        return asset_in_db.to_dict()
+        asset_in_db = await AssetCRUD.create_one(asset)
+        return asset_in_db
 
     @classmethod
     async def _validate_asset_data(
@@ -76,9 +76,10 @@ class AssetController:
         return asset_from_db.to_dict()
 
     @classmethod
-    async def delete_asset(cls, asset_id: str, user_id: str) -> bool:
+    async def delete_asset(cls, asset_id: str, user_id: str) -> Asset:
+        asset_to_delete = await AssetCRUD.get_one_by_user(asset_id, user_id)
         await AssetCRUD.delete_one_by_user(asset_id, user_id)
-        return True
+        return asset_to_delete
 
     @classmethod
     async def calculate_total_asset_value(cls, user: User) -> Decimal:

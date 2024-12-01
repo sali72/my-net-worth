@@ -1,9 +1,8 @@
-from typing import Optional
-
 from fastapi import APIRouter, Depends, Path, Query
 
 from app.api.controllers.asset_controller import AssetController
 from app.api.controllers.auth_controller import has_role
+from app.api.controllers.user_app_data_controller import UserAppDataController
 from models.schemas import (
     AssetCreateSchema,
     AssetFilterSchema,
@@ -26,9 +25,14 @@ router = APIRouter(prefix="/assets", tags=["Asset"])
 async def create_asset_route(
     asset_schema: AssetCreateSchema, user=Depends(has_role(R.USER))
 ):
-    asset_id = await AssetController.create_asset(asset_schema, user)
+    asset = await AssetController.create_asset(asset_schema, user)
+
+    await UserAppDataController.add_value_to_user_app_data_assets_value(
+        user, asset.value, asset.currency_id.id
+    )
+
     message = "Asset created successfully"
-    data = {"id": asset_id}
+    data = {"id": asset.to_dict()}
     return ResponseSchema(data=data, message=message)
 
 
@@ -89,5 +93,10 @@ async def delete_asset_route(
     asset_id: str = Path(..., description="The ID of the asset to delete"),
     user=Depends(has_role(R.USER)),
 ):
-    success = await AssetController.delete_asset(asset_id, user.id)
+    asset = await AssetController.delete_asset(asset_id, user.id)
+
+    await UserAppDataController.reduce_value_from_user_app_data_assets_value(
+        user, asset.value, asset.currency_id.id
+    )
+
     return ResponseSchema(message="Asset deleted successfully")

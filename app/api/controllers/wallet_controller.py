@@ -28,6 +28,8 @@ class WalletController:
         await cls._save_balances(wallet_in_db, balances)
         wallet_with_balances = await WalletCRUD.get_one_by_id(wallet_in_db.id)
 
+        # TODO: refactor and after adding toatl value for each wallet,
+        # move updating user app data to route level
         await cls._add_wallet_value_to_user_app_data(user, wallet_with_balances)
 
         return wallet_with_balances.to_dict()

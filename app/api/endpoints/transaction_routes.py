@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Path, Query
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.transaction_controller import TransactionController
 from app.api.controllers.wallet_controller import WalletController
+from app.api.controllers.user_app_data_controller import UserAppDataController
 from models.schemas import ErrorResponseModel, ResponseSchema
 from models.schemas import Role as R
 from models.schemas import (
@@ -28,7 +29,7 @@ async def create_transaction_route(
     transaction = await TransactionController.create_transaction(
         transaction_schema, user
     )
-    await WalletController.add_value_to_user_app_data(
+    await UserAppDataController.add_value_to_user_app_data(
         user, transaction.amount, transaction.currency_id.id
     )
 
@@ -117,7 +118,7 @@ async def delete_transaction_route(
 ):
     transaction = await TransactionController.delete_transaction(transaction_id, user.id)
     
-    await WalletController.reduce_value_from_user_app_data(
+    await UserAppDataController.reduce_value_from_user_app_data(
         user, transaction.amount, transaction.currency_id.id
     )
     return ResponseSchema(message="Transaction deleted successfully")

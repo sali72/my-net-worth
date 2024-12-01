@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from decimal import Decimal
 from bson import ObjectId
 
 from models.models import UserAppData
@@ -48,10 +48,16 @@ class UserAppDataCRUD:
         cls, current_user_app_data_id: str, updated_user_app_data: UserAppData
     ) -> UserAppData:
         user_app_data = await cls.get_one_by_id(current_user_app_data_id)
-        cls.__update_user_app_data_fields(user_app_data, updated_user_app_data)
-        cls.__update_timestamp(user_app_data)
-        user_app_data.save()
-        return user_app_data
+        return cls.update_one(updated_user_app_data, user_app_data)
+
+    @classmethod
+    def update_one(
+        cls, current_user_app_data: UserAppData, updated_user_app_data: UserAppData
+    ):
+        cls.__update_user_app_data_fields(current_user_app_data, updated_user_app_data)
+        cls.__update_timestamp(current_user_app_data)
+        current_user_app_data.save()
+        return current_user_app_data
 
     @staticmethod
     def __update_user_app_data_fields(
@@ -69,3 +75,29 @@ class UserAppDataCRUD:
     @staticmethod
     def __update_timestamp(user_app_data: UserAppData):
         user_app_data.updated_at = datetime.utcnow()
+
+    @classmethod
+    async def update_user_app_data_wallets_value(
+        cls, user_id: str, total_value: Decimal
+    ):
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user_id)
+        user_app_data.wallets_value = total_value
+        user_app_data.net_worth = user_app_data.assets_value + total_value
+        user_app_data.clean()
+        user_app_data.save()
+
+    @classmethod
+    async def add_amount_to_user_app_data_wallets_value(cls, user_id: str, amount: Decimal):
+        user_app_data = await cls.get_one_by_user_id(user_id)
+        user_app_data.wallets_value += amount
+        user_app_data.net_worth += amount
+        user_app_data.clean()
+        user_app_data.save()
+
+    @classmethod
+    async def reduce_amount_from_user_app_data_wallets_value(cls, user_id: str, amount: Decimal):
+        user_app_data = await cls.get_one_by_user_id(user_id)
+        user_app_data.wallets_value -= amount
+        user_app_data.net_worth -= amount
+        user_app_data.clean()
+        user_app_data.save()

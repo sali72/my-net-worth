@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from mongoengine import ValidationError
 
 from app.crud.currency_crud import CurrencyCRUD
@@ -104,3 +106,29 @@ class UserAppDataController:
     async def get_user_app_data(cls, user: User) -> dict:
         user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
         return user_app_data.to_dict()
+
+    @classmethod
+    async def add_value_to_user_app_data(
+        cls, user: User, amount: Decimal, currency_id: str
+    ):
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
+            user.id
+        )
+        await CurrencyExchangeCRUD.convert_value_to_base_currency(
+            amount, currency_id, base_currency_id, user.id
+        )
+        
+        await UserAppDataCRUD.add_amount_to_user_app_data_wallets_value(user.id, amount)
+
+    @classmethod
+    async def reduce_value_from_user_app_data(
+        cls, user: User, amount: Decimal, currency_id: str
+    ):
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
+            user.id
+        )
+        await CurrencyExchangeCRUD.convert_value_to_base_currency(
+            amount, currency_id, base_currency_id, user.id
+        )
+        
+        await UserAppDataCRUD.reduce_amount_from_user_app_data_wallets_value(user.id, amount)

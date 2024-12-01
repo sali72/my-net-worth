@@ -42,8 +42,10 @@ class WalletController:
         wallet_value = await cls._calculate_wallet_value(
             wallet_with_balances, base_currency_id, user.id
         )
-        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
-        await cls._add_amount_to_user_app_data(user_app_data.id, wallet_value)
+
+        await UserAppDataCRUD.add_amount_to_user_app_data_wallets_value(
+            user.id, wallet_value
+        )
 
     @classmethod
     async def _create_wallet_obj_to_create(
@@ -151,8 +153,10 @@ class WalletController:
         wallet_value = await cls._calculate_wallet_value(
             wallet_with_balances, base_currency_id, user.id
         )
-        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
-        await cls._reduce_amount_from_user_app_data(user_app_data.id, wallet_value)
+
+        await UserAppDataCRUD.reduce_amount_from_user_app_data_wallets_value(
+            user.id, wallet_value
+        )
 
     @classmethod
     async def calculate_total_wallet_value(cls, user: User) -> Decimal:
@@ -168,16 +172,9 @@ class WalletController:
                 wallet, base_currency_id, user.id
             )
 
-        await cls._update_user_app_data_wallets_value(user, total_value)
+        await UserAppDataCRUD.update_user_app_data_wallets_value(user.id, total_value)
 
         return total_value
-
-    @classmethod
-    async def _update_user_app_data_wallets_value(cls, user, total_value):
-        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
-        user_app_data.wallets_value = total_value
-        user_app_data.net_worth = user_app_data.assets_value + total_value
-        await UserAppDataCRUD.update_one_by_id(user_app_data.id, user_app_data)
 
     @classmethod
     async def _calculate_wallet_value(
@@ -186,22 +183,10 @@ class WalletController:
         total_value = Decimal(0)
         balances: List[Balance] = wallet.balances_ids
         for balance in balances:
-            total_value += await cls._convert_value_to_base_currency(
+            total_value += await CurrencyExchangeCRUD.convert_value_to_base_currency(
                 balance.amount, balance.currency_id.id, base_currency_id, user_id
             )
         return total_value
-
-    @classmethod
-    async def _convert_value_to_base_currency(
-        cls, amount: Decimal, currency_id: str, base_currency_id: str, user_id: str
-    ) -> Decimal:
-        if currency_id == base_currency_id:
-            return amount
-
-        exchange_rate = await CurrencyExchangeCRUD.get_exchange_rate(
-            user_id, currency_id, base_currency_id
-        )
-        return amount * exchange_rate
 
     @classmethod
     async def add_balance(
@@ -218,8 +203,10 @@ class WalletController:
         updated_wallet = await BalanceCRUD.create_one(new_balance)
         # updating user app data
         balance_value_to_add = await cls._calculate_balance_value(new_balance, user)
-        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
-        await cls._add_amount_to_user_app_data(user_app_data.id, balance_value_to_add)
+
+        await UserAppDataCRUD.add_amount_to_user_app_data_wallets_value(
+            user.id, balance_value_to_add
+        )
 
         return updated_wallet.to_dict()
 
@@ -243,13 +230,6 @@ class WalletController:
         )
 
     @classmethod
-    async def _add_amount_to_user_app_data(cls, user_app_data_id: str, amount: Decimal):
-        user_app_data = await UserAppDataCRUD.get_one_by_id(user_app_data_id)
-        user_app_data.wallets_value += amount
-        user_app_data.net_worth += amount
-        await UserAppDataCRUD.update_one_by_id(user_app_data_id, user_app_data)
-
-    @classmethod
     async def remove_balance(cls, wallet_id: str, currency_id: str, user: User) -> dict:
         balance_to_remove = await WalletCRUD.get_balance(
             user.id, wallet_id, currency_id
@@ -259,9 +239,9 @@ class WalletController:
         balance_value_to_remove = await cls._calculate_balance_value(
             balance_to_remove, user
         )
-        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
-        await cls._reduce_amount_from_user_app_data(
-            user_app_data.id, balance_value_to_remove
+
+        await UserAppDataCRUD.reduce_amount_from_user_app_data_wallets_value(
+            user.id, balance_value_to_remove
         )
         await BalanceCRUD.delete_one_by_wallet_and_currency_id(wallet_id, currency_id)
         updated_wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
@@ -273,52 +253,9 @@ class WalletController:
         base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
             user.id
         )
-        return await cls._convert_value_to_base_currency(
+        return await CurrencyExchangeCRUD.convert_value_to_base_currency(
             balance.amount,
             balance.currency_id.pk,
             base_currency_id,
             user.id,
-        )
-
-    # TODO: refactor and move user app data related only methods to
-    # relevant file
-    @classmethod
-    async def _reduce_amount_from_user_app_data(
-        cls, user_app_data_id: str, amount: Decimal
-    ):
-        user_app_data = await UserAppDataCRUD.get_one_by_id(user_app_data_id)
-        user_app_data.wallets_value -= amount
-        user_app_data.net_worth -= amount
-        await UserAppDataCRUD.update_one_by_id(user_app_data_id, user_app_data)
-
-    # TODO: refactor and move user app data related only methods to
-    # relevant file
-    @classmethod
-    async def add_value_to_user_app_data(
-        cls, user: User, amount: Decimal, currency_id: str
-    ):
-        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
-            user.id
-        )
-        await cls._convert_value_to_base_currency(
-            amount, currency_id, base_currency_id, user.id
-        )
-        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
-        await cls._add_amount_to_user_app_data(
-            user_app_data.id, amount
-        )
-    
-    @classmethod
-    async def reduce_value_from_user_app_data(
-        cls, user: User, amount: Decimal, currency_id: str
-    ):
-        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
-            user.id
-        )
-        await cls._convert_value_to_base_currency(
-            amount, currency_id, base_currency_id, user.id
-        )
-        user_app_data = await UserAppDataCRUD.get_one_by_user_id(user.id)
-        await cls._reduce_amount_from_user_app_data(
-            user_app_data.id, amount
         )

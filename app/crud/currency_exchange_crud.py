@@ -121,3 +121,15 @@ class CurrencyExchangeCRUD:
                 to_currency_id=from_currency_id,
             ).first()
         )
+        
+    @classmethod
+    async def convert_value_to_base_currency(
+        cls, amount: Decimal, currency_id: str, base_currency_id: str, user_id: str
+    ) -> Decimal:
+        if currency_id == base_currency_id:
+            return amount
+
+        exchange_rate = await cls.get_exchange_rate(
+            user_id, currency_id, base_currency_id
+        )
+        return amount * exchange_rate

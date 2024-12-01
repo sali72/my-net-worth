@@ -72,3 +72,18 @@ async def update_user_credentials(
 
     message = "User credentials updated successfully"
     return ResponseSchema(data=updated_user.to_dict(), message=message)
+
+
+@router.delete(
+    "/user",
+    response_model=ResponseSchema,
+    response_description="Delete current user",
+    status_code=status.HTTP_200_OK,
+)
+async def delete_user(token: str = Depends(oauth2_scheme)):
+    current_user = await get_current_user(token)
+
+    await AuthController.delete_user(current_user)
+
+    message = "User deleted successfully"
+    return ResponseSchema(data={}, message=message)

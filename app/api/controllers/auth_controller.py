@@ -137,7 +137,9 @@ class AuthController:
         return encoded_jwt
 
     @classmethod
-    async def update_user_credentials(cls, current_user: User, update_data: dict) -> User:
+    async def update_user_credentials(
+        cls, current_user: User, update_data: dict
+    ) -> User:
         updated_fields = update_data
 
         if "password" in updated_fields:
@@ -149,6 +151,10 @@ class AuthController:
             return await cls.user_crud.update_one(current_user.username, updated_fields)
         except Exception as e:
             raise e
+
+    @classmethod
+    async def delete_user(cls, current_user: User):
+        await cls.user_crud.delete_one(current_user.username)
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")

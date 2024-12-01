@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Path, Query
 
 from app.api.controllers.asset_controller import AssetController
+from app.crud.asset_crud import AssetCRUD
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.user_app_data_controller import UserAppDataController
 from models.schemas import (
@@ -81,11 +82,31 @@ async def update_asset_route(
     asset_id: str = Path(..., description="The ID of the asset to update"),
     user=Depends(has_role(R.USER)),
 ):
+    await _update_user_app_data_assets_value(asset_schema, asset_id, user)
+
     updated_asset = await AssetController.update_asset(asset_id, asset_schema, user.id)
+
     return ResponseSchema(
         data={"asset": updated_asset},
         message="Asset updated successfully",
     )
+
+
+async def _update_user_app_data_assets_value(asset_schema, asset_id, user):
+    current_asset = await AssetCRUD.get_one_by_user(asset_id, user.id)
+    if asset_schema.value:
+        difference = await AssetController.calculate_asset_value_difference_in_update(
+            user.id, asset_id, asset_schema
+        )
+        if difference != 0:
+            if difference > 0:
+                await UserAppDataController.add_value_to_user_app_data_assets_value(
+                    user, difference, current_asset.currency_id.id
+                )
+            elif difference < 0:
+                await UserAppDataController.reduce_value_from_user_app_data_assets_value(
+                    user, difference, current_asset.currency_id.id
+                )
 
 
 @router.delete("/{asset_id}", response_model=ResponseSchema)

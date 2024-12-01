@@ -1,8 +1,6 @@
 from decimal import Decimal
 from typing import List
 
-from mongoengine import Q
-
 from app.crud.asset_crud import AssetCRUD
 from app.crud.asset_type_crud import AssetTypeCRUD
 from app.crud.currency_crud import CurrencyCRUD
@@ -39,7 +37,7 @@ class AssetController:
             currency_id=asset_schema.currency_id,
             name=asset_schema.name,
             description=asset_schema.description,
-            value=Decimal(asset_schema.value),
+            value=asset_schema.value,
         )
 
     @classmethod
@@ -49,9 +47,7 @@ class AssetController:
             currency_id=asset_schema.currency_id,
             name=asset_schema.name,
             description=asset_schema.description,
-            value=(
-                Decimal(asset_schema.value) if asset_schema.value is not None else None
-            ),
+            value=(asset_schema.value if asset_schema.value is not None else None),
         )
 
     @classmethod
@@ -131,3 +127,11 @@ class AssetController:
     ) -> List[dict]:
         assets = await AssetCRUD.get_filtered_assets(filters, user_id)
         return [asset.to_dict() for asset in assets]
+
+    @classmethod
+    async def calculate_asset_value_difference_in_update(
+        cls, user_id: str, asset_id: str, asset_schema: AssetUpdateSchema
+    ) -> Decimal:
+        asset = await AssetCRUD.get_one_by_user(asset_id, user_id)
+        difference = asset_schema.value - asset.value
+        return difference

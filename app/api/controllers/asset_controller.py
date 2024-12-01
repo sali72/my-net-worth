@@ -117,16 +117,12 @@ class AssetController:
         if asset.currency_id.id == base_currency.id:
             return asset.value
         else:
-            return await cls._convert_to_base_currency(asset, base_currency, user_id)
-
-    @classmethod
-    async def _convert_to_base_currency(
-        cls, asset: Asset, base_currency: Currency, user_id: str
-    ) -> Decimal:
-        exchange_rate = await CurrencyExchangeCRUD.get_exchange_rate(
-            user_id, asset.currency_id.id, base_currency.id
-        )
-        return asset.value * Decimal(exchange_rate)
+            return await CurrencyExchangeCRUD.convert_value_to_base_currency(
+                asset.value,
+                asset.currency_id,
+                base_currency.id,
+                user_id,
+            )
 
     @classmethod
     async def filter_assets(

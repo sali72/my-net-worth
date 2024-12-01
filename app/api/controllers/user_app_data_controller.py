@@ -108,27 +108,36 @@ class UserAppDataController:
         return user_app_data.to_dict()
 
     @classmethod
+    async def _convert_to_base_currency(
+        cls, user_id: str, amount: Decimal, currency_id: str
+    ) -> Decimal:
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
+            user_id
+        )
+        return await CurrencyExchangeCRUD.convert_value_to_base_currency(
+            amount, currency_id, base_currency_id, user_id
+        )
+
+    @classmethod
     async def add_value_to_user_app_data(
         cls, user: User, amount: Decimal, currency_id: str
     ):
-        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
-            user.id
+        converted_amount = await cls._convert_to_base_currency(
+            user.id, amount, currency_id
         )
-        await CurrencyExchangeCRUD.convert_value_to_base_currency(
-            amount, currency_id, base_currency_id, user.id
+
+        await UserAppDataCRUD.add_amount_to_user_app_data_wallets_value(
+            user.id, converted_amount
         )
-        
-        await UserAppDataCRUD.add_amount_to_user_app_data_wallets_value(user.id, amount)
 
     @classmethod
     async def reduce_value_from_user_app_data(
         cls, user: User, amount: Decimal, currency_id: str
     ):
-        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
-            user.id
+        converted_amount = await cls._convert_to_base_currency(
+            user.id, amount, currency_id
         )
-        await CurrencyExchangeCRUD.convert_value_to_base_currency(
-            amount, currency_id, base_currency_id, user.id
+
+        await UserAppDataCRUD.reduce_amount_from_user_app_data_wallets_value(
+            user.id, converted_amount
         )
-        
-        await UserAppDataCRUD.reduce_amount_from_user_app_data_wallets_value(user.id, amount)

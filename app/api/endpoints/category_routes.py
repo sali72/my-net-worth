@@ -15,6 +15,7 @@ router = APIRouter(prefix="/categories", tags=["Category"])
 
 @router.post(
     "",
+    response_model=ResponseSchema,
     responses={
         200: {"model": ResponseSchema, "description": "Successful Response"},
         400: {"model": ErrorResponseModel, "description": "Bad Request"},
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/categories", tags=["Category"])
 )
 async def create_category_route(
     category_schema: CategoryCreateSchema, user=Depends(has_role(R.USER))
-):
+) -> ResponseSchema:
     category_id = await CategoryController.create_category(category_schema, user.id)
     message = "Category created successfully"
     data = {"id": category_id}
@@ -33,7 +34,7 @@ async def create_category_route(
 async def read_category_route(
     category_id: str = Path(..., description="The ID of the category to retrieve"),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     category = await CategoryController.get_category(category_id, user.id)
     return ResponseSchema(
         data={"category": category}, message="Category retrieved successfully"
@@ -41,7 +42,7 @@ async def read_category_route(
 
 
 @router.get("", response_model=ResponseSchema)
-async def read_all_categories_route(user=Depends(has_role(R.USER))):
+async def read_all_categories_route(user=Depends(has_role(R.USER))) -> ResponseSchema:
     categories = await CategoryController.get_all_categories(user.id)
     return ResponseSchema(
         data={"categories": categories},
@@ -54,7 +55,7 @@ async def update_category_route(
     category_schema: CategoryUpdateSchema,
     category_id: str = Path(..., description="The ID of the category to update"),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     updated_category = await CategoryController.update_category(
         category_id, category_schema, user.id
     )
@@ -68,6 +69,6 @@ async def update_category_route(
 async def delete_category_route(
     category_id: str = Path(..., description="The ID of the category to delete"),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     success = await CategoryController.delete_category(category_id, user.id)
     return ResponseSchema(message="Category deleted successfully")

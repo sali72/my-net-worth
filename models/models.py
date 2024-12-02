@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List
+
 from bson import ObjectId
 from mongoengine import (
     CASCADE,
@@ -24,7 +25,7 @@ PRECISION_LIMIT_IN_DB = 10
 class BaseDocument(Document):
     meta = {"abstract": True}
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         # Convert the document to a dictionary
         doc_dict = self.to_mongo().to_dict()
 
@@ -42,11 +43,11 @@ class BaseDocument(Document):
             return self._convert_list(value)
         return value
 
-    def _convert_objectid_to_str(self, object_id):
+    def _convert_objectid_to_str(self, object_id: ObjectId) -> str:
         """Convert an ObjectId to a string."""
         return str(object_id)
 
-    def _convert_list(self, value_list):
+    def _convert_list(self, value_list: list) -> list:
         """Convert a list of ObjectIds or dicts with ObjectIds to strings."""
         if all(isinstance(item, ObjectId) for item in value_list):
             return [self._convert_objectid_to_str(item) for item in value_list]
@@ -54,7 +55,7 @@ class BaseDocument(Document):
             return [self._convert_dict(item) for item in value_list]
         return value_list
 
-    def _convert_dict(self, value_dict):
+    def _convert_dict(self, value_dict: dict) -> dict:
         """Convert ObjectId values in a dictionary to strings."""
         for sub_key, sub_value in value_dict.items():
             if isinstance(sub_value, ObjectId):
@@ -89,7 +90,7 @@ class Currency(BaseDocument):
         ]
     }
 
-    def clean(self):
+    def clean(self) -> None:
         # Call the parent class's clean method
         super().clean()
 
@@ -134,7 +135,7 @@ class Balance(BaseDocument):
     amount = DecimalField(min_value=0, required=True, precision=PRECISION_LIMIT_IN_DB)
     meta = {"indexes": [{"fields": ("wallet_id", "currency_id"), "unique": True}]}
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """Override save to update the Wallet's balances_ids."""
         is_new = self.pk is None
         wallet = Wallet.objects.get(id=self.wallet_id.id)
@@ -155,9 +156,9 @@ class Wallet(BaseDocument):
     updated_at = DateTimeField(default=datetime.utcnow)
     meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         doc_dict = super().to_dict()
-        balances: List[Balance] = self.balances_ids
+        balances = self.balances_ids
         doc_dict["balances_ids"] = [balance.to_dict() for balance in balances]
         return doc_dict
 
@@ -181,7 +182,7 @@ class CurrencyExchange(BaseDocument):
         ]
     }
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         # Check for the existence of the reverse currency pair
         reverse_pair_exists = CurrencyExchange.objects(
             user_id=self.user_id,
@@ -218,7 +219,7 @@ class Category(BaseDocument):
         ]
     }
 
-    def clean(self):
+    def clean(self) -> None:
         # Ensure user_id is provided for non-predefined categories
         if not self.is_predefined and not self.user_id:
             raise ValidationError("user_id is required for non-predefined categories.")
@@ -247,7 +248,7 @@ class Transaction(BaseDocument):
     date = DateTimeField(default=datetime.utcnow)
     description = StringField(max_length=255)
 
-    def clean(self):
+    def clean(self) -> None:
         if self.type == "transfer":
             self._validate_transfer()
         elif self.type == "expense":
@@ -255,7 +256,7 @@ class Transaction(BaseDocument):
         elif self.type == "income":
             self._validate_income()
 
-    def _validate_transfer(self):
+    def _validate_transfer(self) -> None:
         if not self.from_wallet_id or not self.to_wallet_id:
             raise ValidationError(
                 "Both from_wallet_id and to_wallet_id are required for transfers."
@@ -265,13 +266,13 @@ class Transaction(BaseDocument):
                 "from_wallet_id and to_wallet_id cannot be the same for transfers."
             )
 
-    def _validate_expense(self):
+    def _validate_expense(self) -> None:
         if not self.from_wallet_id:
             raise ValidationError("from_wallet_id is required for expenses.")
         if self.to_wallet_id:
             raise ValidationError("to_wallet_id should not be provided for expenses.")
 
-    def _validate_income(self):
+    def _validate_income(self) -> None:
         if not self.to_wallet_id:
             raise ValidationError("to_wallet_id is required for incomes.")
         if self.from_wallet_id:
@@ -298,7 +299,7 @@ class AssetType(BaseDocument):
         ]
     }
 
-    def clean(self):
+    def clean(self) -> None:
         if not self.is_predefined and not self.user_id:
             raise ValidationError("user_id is required for non-predefined asset types.")
 
@@ -326,7 +327,7 @@ class Asset(BaseDocument):
     updated_at = DateTimeField(default=datetime.utcnow)
     meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
 
-    def clean(self):
-        super().clean()  # Call the parent class's clean method if needed
+    def clean(self) -> None:
+        super().clean()
         if len(self.name) < 3:
             raise ValidationError("Name must be at least 3 characters long.")

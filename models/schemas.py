@@ -2,15 +2,9 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
+
 from fastapi import Query
-from pydantic import (
-    BaseModel,
-    EmailStr,
-    Extra,
-    Field,
-    field_validator,
-    model_validator,
-)
+from pydantic import BaseModel, EmailStr, Extra, Field, field_validator, model_validator
 
 MAX_INTEGER_PART = 10**10
 MAX_DECIMAL_PART = 8
@@ -139,7 +133,7 @@ class CurrencyUpdateSchema(BaseModel):
 class CurrencyExchangeCreateSchema(BaseModel):
     from_currency_id: str = Field(..., example="currency_id_123")
     to_currency_id: str = Field(..., example="currency_id_456")
-    rate: Decimal = Field(..., example=Decimal("0.85"))
+    rate: Decimal = Field(..., example="0.85")
 
     @field_validator("rate", mode="before")
     def validate_rate(cls, v):

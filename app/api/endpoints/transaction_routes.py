@@ -2,15 +2,15 @@ from fastapi import APIRouter, Depends, Path, Query
 
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.transaction_controller import TransactionController
-from app.api.controllers.wallet_controller import WalletController
 from app.api.controllers.user_app_data_controller import UserAppDataController
+from app.api.controllers.wallet_controller import WalletController
 from models.schemas import ErrorResponseModel, ResponseSchema
 from models.schemas import Role as R
 from models.schemas import (
     TransactionCreateSchema,
     TransactionFilterParams,
-    TransactionUpdateSchema,
     TransactionStatisticsParams,
+    TransactionUpdateSchema,
 )
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/transactions", tags=["Transaction"])
 )
 async def create_transaction_route(
     transaction_schema: TransactionCreateSchema, user=Depends(has_role(R.USER))
-):
+) -> ResponseSchema:
     transaction = await TransactionController.create_transaction(
         transaction_schema, user
     )
@@ -42,7 +42,7 @@ async def create_transaction_route(
 async def filter_transactions_route(
     params: TransactionFilterParams = Query(...),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     transactions = await TransactionController.filter_transactions(
         user.id,
         params.start_date,
@@ -62,7 +62,7 @@ async def filter_transactions_route(
 async def transaction_statistics_route(
     params: TransactionStatisticsParams = Query(...),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     statistics = await TransactionController.calculate_statistics(
         user.id, params.start_date, params.end_date
     )
@@ -78,7 +78,7 @@ async def read_transaction_route(
         ..., description="The ID of the transaction to retrieve"
     ),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     transaction = await TransactionController.get_transaction(transaction_id, user.id)
     return ResponseSchema(
         data={"transaction": transaction}, message="Transaction retrieved successfully"
@@ -86,7 +86,7 @@ async def read_transaction_route(
 
 
 @router.get("", response_model=ResponseSchema)
-async def read_all_transactions_route(user=Depends(has_role(R.USER))):
+async def read_all_transactions_route(user=Depends(has_role(R.USER))) -> ResponseSchema:
     transactions = await TransactionController.get_all_transactions(user.id)
     return ResponseSchema(
         data={"transactions": transactions},
@@ -99,12 +99,12 @@ async def update_transaction_route(
     transaction_schema: TransactionUpdateSchema,
     transaction_id: str = Path(..., description="The ID of the transaction to update"),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     updated_transaction = await TransactionController.update_transaction(
         transaction_id, transaction_schema, user.id
     )
     await WalletController.calculate_total_wallet_value(user)
-    
+
     return ResponseSchema(
         data={"transaction": updated_transaction},
         message="Transaction updated successfully",
@@ -115,9 +115,11 @@ async def update_transaction_route(
 async def delete_transaction_route(
     transaction_id: str = Path(..., description="The ID of the transaction to delete"),
     user=Depends(has_role(R.USER)),
-):
-    transaction = await TransactionController.delete_transaction(transaction_id, user.id)
-    
+) -> ResponseSchema:
+    transaction = await TransactionController.delete_transaction(
+        transaction_id, user.id
+    )
+
     await UserAppDataController.reduce_value_from_user_app_data_wallets_value(
         user, transaction.amount, transaction.currency_id.id
     )

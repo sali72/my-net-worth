@@ -16,14 +16,14 @@ async def change_base_currency_by_id_route(
         ..., description="The ID of the currency to change as base"
     ),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     await UserAppDataController.change_base_currency_by_id(user, currency_id)
-    
+
     total_wallets_value = await WalletController.calculate_total_wallet_value(user)
     total_assets_value = await AssetController.calculate_total_asset_value(user)
     net_worth = total_wallets_value + total_assets_value
     result = await UserAppDataController.update_user_app_data_net_worth(user, net_worth)
-    
+
     return ResponseSchema(
         data=result,
         message="Base currency changed successfully",
@@ -31,8 +31,7 @@ async def change_base_currency_by_id_route(
 
 
 @router.get("/net-worth", response_model=ResponseSchema)
-async def calculate_net_worth_route(user=Depends(has_role(R.USER))):
-
+async def calculate_net_worth_route(user=Depends(has_role(R.USER))) -> ResponseSchema:
     total_wallets_value = await WalletController.calculate_total_wallet_value(user)
     total_assets_value = await AssetController.calculate_total_asset_value(user)
     net_worth = total_wallets_value + total_assets_value
@@ -46,7 +45,7 @@ async def calculate_net_worth_route(user=Depends(has_role(R.USER))):
 
 
 @router.get("/user-data", response_model=ResponseSchema)
-async def get_user_app_data_route(user=Depends(has_role(R.USER))):
+async def get_user_app_data_route(user=Depends(has_role(R.USER))) -> ResponseSchema:
     user_app_data = await UserAppDataController.get_user_app_data(user)
     return ResponseSchema(
         data=user_app_data,

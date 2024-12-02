@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Path, Query
 
 from app.api.controllers.asset_controller import AssetController
-from app.crud.asset_crud import AssetCRUD
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.user_app_data_controller import UserAppDataController
+from app.crud.asset_crud import AssetCRUD
+from models.models import User
 from models.schemas import (
     AssetCreateSchema,
     AssetFilterSchema,
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/assets", tags=["Asset"])
 )
 async def create_asset_route(
     asset_schema: AssetCreateSchema, user=Depends(has_role(R.USER))
-):
+) -> ResponseSchema:
     asset = await AssetController.create_asset(asset_schema, user)
 
     await UserAppDataController.add_value_to_user_app_data_assets_value(
@@ -38,7 +39,9 @@ async def create_asset_route(
 
 
 @router.get("/total-value", response_model=ResponseSchema)
-async def calculate_total_asset_value_route(user=Depends(has_role(R.USER))):
+async def calculate_total_asset_value_route(
+    user=Depends(has_role(R.USER)),
+) -> ResponseSchema:
     total_value = await AssetController.calculate_total_asset_value(user)
     return ResponseSchema(
         data={"total_value": total_value},
@@ -50,7 +53,7 @@ async def calculate_total_asset_value_route(user=Depends(has_role(R.USER))):
 async def filter_assets_route(
     params: AssetFilterSchema = Query(...),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     filtered_assets = await AssetController.filter_assets(params, user.id)
     return ResponseSchema(
         data={"assets": filtered_assets},
@@ -62,13 +65,13 @@ async def filter_assets_route(
 async def read_asset_route(
     asset_id: str = Path(..., description="The ID of the asset to retrieve"),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     asset = await AssetController.get_asset(asset_id, user.id)
     return ResponseSchema(data={"asset": asset}, message="Asset retrieved successfully")
 
 
 @router.get("", response_model=ResponseSchema)
-async def read_all_assets_route(user=Depends(has_role(R.USER))):
+async def read_all_assets_route(user=Depends(has_role(R.USER))) -> ResponseSchema:
     assets = await AssetController.get_all_assets(user.id)
     return ResponseSchema(
         data={"assets": assets},
@@ -81,7 +84,7 @@ async def update_asset_route(
     asset_schema: AssetUpdateSchema,
     asset_id: str = Path(..., description="The ID of the asset to update"),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     await _update_user_app_data_assets_value(asset_schema, asset_id, user)
 
     updated_asset = await AssetController.update_asset(asset_id, asset_schema, user.id)
@@ -92,7 +95,23 @@ async def update_asset_route(
     )
 
 
-async def _update_user_app_data_assets_value(asset_schema, asset_id, user):
+@router.delete("/{asset_id}", response_model=ResponseSchema)
+async def delete_asset_route(
+    asset_id: str = Path(..., description="The ID of the asset to delete"),
+    user=Depends(has_role(R.USER)),
+) -> ResponseSchema:
+    asset = await AssetController.delete_asset(asset_id, user.id)
+
+    await UserAppDataController.reduce_value_from_user_app_data_assets_value(
+        user, asset.value, asset.currency_id.id
+    )
+
+    return ResponseSchema(message="Asset deleted successfully")
+
+
+async def _update_user_app_data_assets_value(
+    asset_schema: AssetUpdateSchema, asset_id: str, user: User
+) -> None:
     current_asset = await AssetCRUD.get_one_by_user(asset_id, user.id)
     if asset_schema.value:
         difference = await AssetController.calculate_asset_value_difference_in_update(
@@ -107,17 +126,3 @@ async def _update_user_app_data_assets_value(asset_schema, asset_id, user):
                 await UserAppDataController.reduce_value_from_user_app_data_assets_value(
                     user, difference, current_asset.currency_id.id
                 )
-
-
-@router.delete("/{asset_id}", response_model=ResponseSchema)
-async def delete_asset_route(
-    asset_id: str = Path(..., description="The ID of the asset to delete"),
-    user=Depends(has_role(R.USER)),
-):
-    asset = await AssetController.delete_asset(asset_id, user.id)
-
-    await UserAppDataController.reduce_value_from_user_app_data_assets_value(
-        user, asset.value, asset.currency_id.id
-    )
-
-    return ResponseSchema(message="Asset deleted successfully")

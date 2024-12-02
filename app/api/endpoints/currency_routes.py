@@ -14,7 +14,7 @@ router = APIRouter(prefix="/currencies", tags=["Currency"])
 
 
 @router.get("/predefined", response_model=ResponseSchema)
-async def read_predefined_currencies_route():
+async def read_predefined_currencies_route() -> ResponseSchema:
     currencies = await CurrencyController.get_predefined_currencies()
     return ResponseSchema(
         data={"currencies": currencies},
@@ -24,6 +24,7 @@ async def read_predefined_currencies_route():
 
 @router.post(
     "",
+    response_model=ResponseSchema,
     responses={
         200: {"model": ResponseSchema, "description": "Successful Response"},
         400: {"model": ErrorResponseModel, "description": "Bad Request"},
@@ -31,7 +32,7 @@ async def read_predefined_currencies_route():
 )
 async def create_currency_route(
     currency_schema: CurrencyCreateSchema, user=Depends(has_role(R.USER))
-):
+) -> ResponseSchema:
     currency_id = await CurrencyController.create_currency(currency_schema, user)
     message = "Currency created successfully"
     data = {"id": currency_id}
@@ -42,7 +43,7 @@ async def create_currency_route(
 async def read_currency_route(
     currency_id: str = Path(..., description="The ID of the currency to retrieve"),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     currency = await CurrencyController.get_currency(currency_id, user.id)
     return ResponseSchema(
         data={"currency": currency}, message="Currency retrieved successfully"
@@ -50,7 +51,7 @@ async def read_currency_route(
 
 
 @router.get("", response_model=ResponseSchema)
-async def read_all_currencies_route(user=Depends(has_role(R.USER))):
+async def read_all_currencies_route(user=Depends(has_role(R.USER))) -> ResponseSchema:
     currencies = await CurrencyController.get_all_currencies(user.id)
     return ResponseSchema(
         data={"currencies": currencies},
@@ -63,7 +64,7 @@ async def update_currency_route(
     currency_schema: CurrencyUpdateSchema,
     currency_id: str = Path(..., description="The ID of the currency to update"),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     updated_currency = await CurrencyController.update_currency(
         currency_id, currency_schema, user.id
     )
@@ -77,6 +78,6 @@ async def update_currency_route(
 async def delete_currency_route(
     currency_id: str = Path(..., description="The ID of the currency to delete"),
     user=Depends(has_role(R.USER)),
-):
+) -> ResponseSchema:
     success = await CurrencyController.delete_currency(currency_id, user.id)
     return ResponseSchema(message="Currency deleted successfully")

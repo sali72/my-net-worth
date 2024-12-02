@@ -1,3 +1,5 @@
+from typing import Dict
+
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -20,9 +22,8 @@ router = APIRouter(tags=["Authentication"])
     response_description="Register a new user",
     status_code=status.HTTP_201_CREATED,
 )
-async def register(user_schema: UserSchema):
+async def register(user_schema: UserSchema) -> ResponseSchema:
     access_token = await AuthController.register_user(user_schema)
-
     message = "User registered successfully"
     data = Token(access_token=access_token, token_type="bearer")
     return ResponseSchema(data=dict(data), message=message)
@@ -30,6 +31,7 @@ async def register(user_schema: UserSchema):
 
 @router.post(
     "/login",
+    response_model=Token,
     response_description="Login a user",
     status_code=status.HTTP_200_OK,
 )
@@ -48,9 +50,8 @@ async def login_for_access_token(
     response_description="Get current user data",
     status_code=status.HTTP_200_OK,
 )
-async def get_user_data(token: str = Depends(oauth2_scheme)):
+async def get_user_data(token: str = Depends(oauth2_scheme)) -> ResponseSchema:
     current_user = await get_current_user(token)
-
     message = "User data retrieved successfully"
     return ResponseSchema(data=current_user.to_dict(), message=message)
 
@@ -63,13 +64,11 @@ async def get_user_data(token: str = Depends(oauth2_scheme)):
 )
 async def update_user_credentials(
     update_data: UpdateUserSchema, token: str = Depends(oauth2_scheme)
-):
+) -> ResponseSchema:
     current_user = await get_current_user(token)
-
     updated_user = await AuthController.update_user_credentials(
         current_user, update_data.model_dump(exclude_unset=True)
     )
-
     message = "User credentials updated successfully"
     return ResponseSchema(data=updated_user.to_dict(), message=message)
 
@@ -80,10 +79,8 @@ async def update_user_credentials(
     response_description="Delete current user",
     status_code=status.HTTP_200_OK,
 )
-async def delete_user(token: str = Depends(oauth2_scheme)):
+async def delete_user(token: str = Depends(oauth2_scheme)) -> ResponseSchema:
     current_user = await get_current_user(token)
-
     await AuthController.delete_user(current_user)
-
     message = "User deleted successfully"
     return ResponseSchema(data={}, message=message)

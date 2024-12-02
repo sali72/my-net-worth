@@ -18,7 +18,7 @@ from mongoengine import (
     ValidationError,
 )
 
-from models.validators import TransactionValidator
+from models.validators import TransactionValidator, CurrencyValidator
 
 PRECISION_LIMIT_IN_DB = 10
 
@@ -92,24 +92,8 @@ class Currency(BaseDocument):
     }
 
     def clean(self) -> None:
-        # Call the parent class's clean method
         super().clean()
-
-        # Validate user_id for non-predefined currencies
-        if not self.is_predefined and not self.user_id:
-            raise ValidationError("user_id is required for non-predefined currencies.")
-
-        # Validate code length based on currency_type
-        if self.currency_type == "fiat":
-            if len(self.code) != 3:
-                raise ValidationError(
-                    "Code must be exactly 3 characters for fiat currencies."
-                )
-        elif self.currency_type == "crypto":
-            if not (3 <= len(self.code) <= 10):
-                raise ValidationError(
-                    "Code must be between 3 and 10 characters for crypto currencies."
-                )
+        CurrencyValidator.validate(self)
 
 
 class UserAppData(BaseDocument):

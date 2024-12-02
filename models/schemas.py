@@ -6,8 +6,8 @@ from typing import List, Optional
 from fastapi import Query
 from pydantic import BaseModel, EmailStr, Extra, Field, field_validator, model_validator
 
-from models.validators import TransactionValidator
 from models.models import Transaction
+from models.validators import CurrencyValidator, TransactionValidator
 
 MAX_INTEGER_PART = 10**10
 MAX_DECIMAL_PART = 8
@@ -93,17 +93,11 @@ class CurrencyCreateSchema(BaseModel):
     currency_type: str = Field(..., choices=["fiat", "crypto"], example="fiat")
 
     @model_validator(mode="after")
-    def check_code_length(cls, values):
+    def validate_currency(cls, values):
         code = values.code
         currency_type = values.currency_type
 
-        if currency_type == "fiat" and len(code) != 3:
-            raise ValueError("Code must be exactly 3 characters for fiat currencies.")
-        elif currency_type == "crypto" and not (3 <= len(code) <= 10):
-            raise ValueError(
-                "Code must be between 3 and 10 characters for crypto currencies."
-            )
-
+        CurrencyValidator.validate_code_length(code, currency_type)
         return values
 
 
@@ -116,20 +110,13 @@ class CurrencyUpdateSchema(BaseModel):
     )
 
     @model_validator(mode="after")
-    def check_code_length(cls, values):
+    def validate_currency(cls, values):
         code = values.code
         currency_type = values.currency_type
 
         if code and currency_type:
-            if currency_type == "fiat" and len(code) != 3:
-                raise ValueError(
-                    "Code must be exactly 3 characters for fiat currencies."
-                )
-            elif currency_type == "crypto" and not (3 <= len(code) <= 10):
-                raise ValueError(
-                    "Code must be between 3 and 10 characters for crypto currencies."
-                )
-
+            # Validate code length using the validator
+            CurrencyValidator.validate_code_length(code, currency_type)
         return values
 
 

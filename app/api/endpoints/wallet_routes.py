@@ -2,9 +2,14 @@ from fastapi import APIRouter, Depends, Path
 
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.wallet_controller import WalletController
-from models.schemas import BalanceSchema, ErrorResponseModel, ResponseSchema
-from models.schemas import Role as R
-from models.schemas import WalletCreateSchema, WalletUpdateSchema
+from models.enums import RoleEnum as R
+from models.schemas import (
+    BalanceSchema,
+    ErrorResponseModel,
+    ResponseSchema,
+    WalletCreateSchema,
+    WalletUpdateSchema,
+)
 
 router = APIRouter(prefix="/wallets", tags=["Wallet"])
 

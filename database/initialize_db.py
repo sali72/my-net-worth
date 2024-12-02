@@ -1,9 +1,8 @@
-from app.crud.currency_crud import CurrencyCRUD
-from app.crud.category_crud import (
-    CategoryCRUD,
-)
 from app.crud.asset_type_crud import AssetTypeCRUD
-from models.models import Currency, Category, AssetType
+from app.crud.category_crud import CategoryCRUD
+from app.crud.currency_crud import CurrencyCRUD
+from models.enums import TransactionTypeEnum as T
+from models.models import AssetType, Category, Currency
 
 
 async def initialize_fiat_and_crypto_currencies():
@@ -36,7 +35,12 @@ async def initialize_fiat_and_crypto_currencies():
             "symbol": "CHF",
             "currency_type": "fiat",
         },
-        {"code": "CNY", "name": "Chinese Yuan", "symbol": "CN¥", "currency_type": "fiat"},
+        {
+            "code": "CNY",
+            "name": "Chinese Yuan",
+            "symbol": "CN¥",
+            "currency_type": "fiat",
+        },
         {
             "code": "SEK",
             "name": "Swedish Krona",
@@ -82,12 +86,12 @@ async def initialize_fiat_and_crypto_currencies():
 
 async def initialize_common_categories():
     categories = [
-        {"name": "Salary", "type": "income"},
-        {"name": "Freelance", "type": "income"},
-        {"name": "Groceries", "type": "expense"},
-        {"name": "Rent", "type": "expense"},
-        {"name": "Utilities", "type": "expense"},
-        {"name": "Bank Transfer", "type": "transfer"},
+        {"name": "Salary", "type": T.INCOME.value},
+        {"name": "Freelance", "type": T.INCOME.value},
+        {"name": "Groceries", "type": T.EXPENSE.value},
+        {"name": "Rent", "type": T.EXPENSE.value},
+        {"name": "Utilities", "type": T.EXPENSE.value},
+        {"name": "Bank Transfer", "type": T.TRANSFER.value},
     ]
 
     for category_data in categories:

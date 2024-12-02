@@ -1,11 +1,12 @@
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
 from typing import List, Optional
 
 from fastapi import Query
 from pydantic import BaseModel, EmailStr, Extra, Field, field_validator, model_validator
 
+from models.enums import TransactionTypeEnum
+from models.enums import TransactionTypeEnum as T
 from models.models import CurrencyExchange, Transaction
 from models.validator_utilities import check_value_precision
 from models.validators import CurrencyValidator, TransactionValidator
@@ -149,7 +150,9 @@ class TransactionCreateSchema(TransactionBaseSchema):
     to_wallet_id: Optional[str] = Field(None, example="to_wallet_id_123")
     currency_id: str = Field(..., example="currency_id_123")
     type: str = Field(
-        ..., choices=["income", "expense", "transfer"], example="transfer"
+        ...,
+        choices=[T.INCOME.value, T.EXPENSE.value, T.TRANSFER.value],
+        example=T.TRANSFER.value,
     )
     amount: Decimal = Field(..., example="50.75")
 
@@ -164,12 +167,6 @@ class TransactionUpdateSchema(TransactionBaseSchema):
     pass
 
 
-class TransactionType(str, Enum):
-    INCOME = "income"
-    EXPENSE = "expense"
-    TRANSFER = "transfer"
-
-
 class TransactionFilterParams(BaseModel):
     start_date: Optional[datetime] = Query(
         None,
@@ -179,7 +176,7 @@ class TransactionFilterParams(BaseModel):
         None,
         description="End date for filtering in ISO format (e.g., 2023-10-15T14:30:00Z)",
     )
-    transaction_type: Optional[TransactionType] = Query(
+    transaction_type: Optional[TransactionTypeEnum] = Query(
         None, description="Type of transaction"
     )
     category_id: Optional[str] = Query(
@@ -198,11 +195,11 @@ class TransactionFilterParams(BaseModel):
         from_wallet_id = values.from_wallet_id
         to_wallet_id = values.to_wallet_id
 
-        if transaction_type == TransactionType.INCOME and from_wallet_id:
+        if transaction_type == TransactionTypeEnum.INCOME and from_wallet_id:
             raise ValueError(
                 "For 'income' transactions, 'from_wallet_id' must not be provided."
             )
-        elif transaction_type == TransactionType.EXPENSE and to_wallet_id:
+        elif transaction_type == TransactionTypeEnum.EXPENSE and to_wallet_id:
             raise ValueError(
                 "For 'expense' transactions, 'to_wallet_id' must not be provided."
             )
@@ -223,7 +220,11 @@ class TransactionStatisticsParams(BaseModel):
 
 class CategoryCreateSchema(BaseModel):
     name: str = Field(..., max_length=50, example="Groceries")
-    type: str = Field(..., choices=["income", "expense", "transfer"], example="expense")
+    type: str = Field(
+        ...,
+        choices=[T.INCOME.value, T.EXPENSE.value, T.TRANSFER.value],
+        example=T.EXPENSE.value,
+    )
     description: Optional[str] = Field(
         None, max_length=255, example="Necessary Grocery shoppings"
     )
@@ -324,8 +325,3 @@ class AssetFilterSchema(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
-
-
-class Role(Enum):
-    ADMIN = "admin"
-    USER = "user"

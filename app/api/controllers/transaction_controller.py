@@ -7,6 +7,7 @@ from mongoengine import ValidationError
 from app.crud.category_crud import CategoryCRUD
 from app.crud.transaction_crud import TransactionCRUD
 from app.crud.wallet_crud import WalletCRUD
+from models.enums import TransactionTypeEnum as T
 from models.models import Transaction, User, Wallet
 from models.schemas import TransactionCreateSchema, TransactionUpdateSchema
 
@@ -70,7 +71,9 @@ class TransactionController:
         Returns:
             List[Dict]: A list of dictionaries representing the transactions.
         """
-        transactions: List[Transaction] = await TransactionCRUD.get_all_by_user_id(user_id)
+        transactions: List[Transaction] = await TransactionCRUD.get_all_by_user_id(
+            user_id
+        )
         return [transaction.to_dict() for transaction in transactions]
 
     @classmethod
@@ -94,9 +97,15 @@ class TransactionController:
             ValidationError: If validation fails during update.
             Exception: Any exception that occurs during balance adjustment.
         """
-        existing_transaction = await TransactionCRUD.get_one_by_user(transaction_id, user_id)
-        updated_transaction = cls._create_transaction_obj_for_update(transaction_update_schema)
-        await TransactionCRUD.update_one_by_user(user_id, transaction_id, updated_transaction)
+        existing_transaction = await TransactionCRUD.get_one_by_user(
+            transaction_id, user_id
+        )
+        updated_transaction = cls._create_transaction_obj_for_update(
+            transaction_update_schema
+        )
+        await TransactionCRUD.update_one_by_user(
+            user_id, transaction_id, updated_transaction
+        )
 
         if updated_transaction.amount:
             await cls._handle_amount_update(
@@ -182,7 +191,9 @@ class TransactionController:
         Returns:
             Dict[str, Decimal]: A dictionary containing total income, total expense, and net balance.
         """
-        transactions = await TransactionCRUD.filter_transactions(user_id, start_date, end_date)
+        transactions = await TransactionCRUD.filter_transactions(
+            user_id, start_date, end_date
+        )
         total_income, total_expense = cls._calculate_income_expense(transactions)
         net_balance = total_income - total_expense
         return {
@@ -246,12 +257,12 @@ class TransactionController:
             List[Wallet]: A list of wallets involved in the transaction.
         """
         wallets = []
-        if transaction_schema.type in ["expense", "transfer"]:
+        if transaction_schema.type in [T.EXPENSE.value, T.TRANSFER.value]:
             from_wallet = await WalletCRUD.get_one_by_user(
                 transaction_schema.from_wallet_id, user_id
             )
             wallets.append(from_wallet)
-        if transaction_schema.type in ["income", "transfer"]:
+        if transaction_schema.type in [T.INCOME.value, T.TRANSFER.value]:
             to_wallet = await WalletCRUD.get_one_by_user(
                 transaction_schema.to_wallet_id, user_id
             )
@@ -315,15 +326,15 @@ class TransactionController:
             List[Tuple[str, str, Decimal]]: A list of tuples with wallet ID, currency ID, and adjustment amount.
         """
         adjustments = []
-        if transaction.type == "income":
+        if transaction.type == T.INCOME.value:
             adjustments.append(
                 (transaction.to_wallet_id.id, transaction.currency_id.id, amount)
             )
-        elif transaction.type == "expense":
+        elif transaction.type == T.EXPENSE.value:
             adjustments.append(
                 (transaction.from_wallet_id.id, transaction.currency_id.id, -amount)
             )
-        elif transaction.type == "transfer":
+        elif transaction.type == T.TRANSFER.value:
             adjustments.append(
                 (transaction.from_wallet_id.id, transaction.currency_id.id, -amount)
             )
@@ -479,8 +490,8 @@ class TransactionController:
         total_income = Decimal(0)
         total_expense = Decimal(0)
         for transaction in transactions:
-            if transaction.type == "income":
+            if transaction.type == T.INCOME.value:
                 total_income += transaction.amount
-            elif transaction.type == "expense":
+            elif transaction.type == T.EXPENSE.value:
                 total_expense += transaction.amount
         return total_income, total_expense

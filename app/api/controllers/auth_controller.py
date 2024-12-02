@@ -13,8 +13,9 @@ from zxcvbn import zxcvbn
 
 from app.crud.user_app_data_crud import UserAppDataCRUD
 from app.crud.user_crud import UserCRUD
+from models.enums import RoleEnum
 from models.models import User, UserAppData
-from models.schemas import Role, UserSchema
+from models.schemas import UserSchema
 
 load_dotenv()
 
@@ -98,7 +99,7 @@ class AuthController:
             username=user_schema.username,
             hashed_password=hashed_password,
             email=user_schema.email,
-            role=Role.USER.value,
+            role=RoleEnum.USER.value,
         )
         user_in_db = await cls.user_crud.create_one(user_model)
         try:
@@ -171,10 +172,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     return user
 
 
-def has_role(role: Role):
+def has_role(role: RoleEnum):
     def role_verifier(current_user: User = Depends(get_current_user)) -> User:
         if (role.value != current_user.role) and (
-            Role.ADMIN.value != current_user.role
+            RoleEnum.ADMIN.value != current_user.role
         ):
             raise HTTPException(status_code=403, detail="Operation not permitted")
         return current_user

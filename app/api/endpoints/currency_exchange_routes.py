@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, Path
 
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.currency_exchange_controller import CurrencyExchangeController
+from models.enums import RoleEnum as R
 from models.schemas import (
     CurrencyExchangeCreateSchema,
     CurrencyExchangeUpdateSchema,
     ErrorResponseModel,
     ResponseSchema,
 )
-from models.schemas import Role as R
 
 router = APIRouter(prefix="/currency-exchanges", tags=["CurrencyExchange"])
 

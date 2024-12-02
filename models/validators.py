@@ -1,17 +1,18 @@
+from models.enums import TransactionTypeEnum as T
 from mongoengine import ValidationError
 
-from models.models import Transaction,Currency ,CurrencyExchange
-
+from models.models import Currency, CurrencyExchange, Transaction
 from models.validator_utilities import check_value_precision
+
 
 class TransactionValidator:
     @staticmethod
     def validate(transaction: Transaction) -> None:
-        if transaction.type == "transfer":
+        if transaction.type == T.TRANSFER.value:
             TransactionValidator._validate_transfer(transaction)
-        elif transaction.type == "expense":
+        elif transaction.type == T.EXPENSE.value:
             TransactionValidator._validate_expense(transaction)
-        elif transaction.type == "income":
+        elif transaction.type == T.INCOME.value:
             TransactionValidator._validate_income(transaction)
         else:
             raise ValidationError(f"Unknown transaction type: {transaction.type}")
@@ -69,6 +70,7 @@ class CurrencyValidator:
         else:
             raise ValidationError(f"Invalid currency_type: {currency_type}")
 
+
 class CurrencyExchangeValidator:
     @staticmethod
     def validate(exchange: CurrencyExchange) -> None:
@@ -83,7 +85,9 @@ class CurrencyExchangeValidator:
             to_currency_id=exchange.from_currency_id,
         ).first()
         if reverse_pair_exists:
-            raise ValidationError("A reverse currency exchange pair already exists for this user.")
+            raise ValidationError(
+                "A reverse currency exchange pair already exists for this user."
+            )
 
     @staticmethod
     def validate_rate_precision(rate):

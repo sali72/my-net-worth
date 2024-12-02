@@ -4,8 +4,8 @@ from app.api.controllers.asset_controller import AssetController
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.user_app_data_controller import UserAppDataController
 from app.api.controllers.wallet_controller import WalletController
+from models.enums import RoleEnum as R
 from models.schemas import ResponseSchema
-from models.schemas import Role as R
 
 router = APIRouter(prefix="/user-app-data", tags=["UserAppData"])
 

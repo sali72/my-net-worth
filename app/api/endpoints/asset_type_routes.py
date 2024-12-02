@@ -4,13 +4,13 @@ from fastapi import APIRouter, Depends, Path
 
 from app.api.controllers.asset_type_controller import AssetTypeController
 from app.api.controllers.auth_controller import has_role
+from models.enums import RoleEnum as R
 from models.schemas import (
     AssetTypeCreateSchema,
     AssetTypeUpdateSchema,
     ErrorResponseModel,
     ResponseSchema,
 )
-from models.schemas import Role as R
 
 router = APIRouter(prefix="/asset-types", tags=["AssetType"])
 

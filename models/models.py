@@ -18,6 +18,7 @@ from mongoengine import (
     ValidationError,
 )
 
+from models.enums import TransactionTypeEnum as T
 from models.validators import (
     CurrencyExchangeValidator,
     CurrencyValidator,
@@ -179,7 +180,9 @@ class CurrencyExchange(BaseDocument):
 class Category(BaseDocument):
     user_id = ReferenceField(User, required=False, reverse_delete_rule=CASCADE)
     name = StringField(required=True, max_length=50)
-    type = StringField(required=True, choices=["income", "expense", "transfer"])
+    type = StringField(
+        required=True, choices=[T.INCOME.value, T.EXPENSE.value, T.TRANSFER.value]
+    )
     description = StringField(max_length=255)
     is_predefined = BooleanField(default=False)
     meta = {
@@ -221,7 +224,9 @@ class Transaction(BaseDocument):
         "Category", required=False, reverse_delete_rule=NULLIFY
     )
     currency_id = ReferenceField("Currency", required=True, reverse_delete_rule=DENY)
-    type = StringField(required=True, choices=["income", "expense", "transfer"])
+    type = StringField(
+        required=True, choices=[T.INCOME.value, T.EXPENSE.value, T.TRANSFER.value]
+    )
     amount = DecimalField(required=True, precision=PRECISION_LIMIT_IN_DB)
     date = DateTimeField(default=datetime.utcnow)
     description = StringField(max_length=255)

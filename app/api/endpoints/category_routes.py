@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, Path
 
 from app.api.controllers.auth_controller import has_role
 from app.api.controllers.category_controller import CategoryController
+from models.enums import RoleEnum as R
 from models.schemas import (
     CategoryCreateSchema,
     CategoryUpdateSchema,
     ErrorResponseModel,
     ResponseSchema,
 )
-from models.schemas import Role as R
 
 router = APIRouter(prefix="/categories", tags=["Category"])
 

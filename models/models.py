@@ -22,6 +22,7 @@ from models.enums import TransactionTypeEnum as T
 from models.validators import (
     CurrencyExchangeValidator,
     CurrencyValidator,
+    PredefinedEntityValidator,
     TransactionValidator,
 )
 
@@ -69,6 +70,17 @@ class BaseDocument(Document):
         return value_dict
 
 
+class PredefinedEntity(BaseDocument):
+    user_id = ReferenceField("User", required=False, reverse_delete_rule=CASCADE)
+    name = StringField(required=True, max_length=50)
+    is_predefined = BooleanField(default=False)
+    meta = {"abstract": True}
+
+    def clean(self) -> None:
+        super().clean()
+        PredefinedEntityValidator.validate(self)
+
+
 class TimestampMixin:
     created_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
     updated_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
@@ -82,12 +94,9 @@ class User(BaseDocument, TimestampMixin):
     role = StringField(required=True, choices=["user", "admin"])
 
 
-class Currency(BaseDocument, TimestampMixin):
-    user_id = ReferenceField("User", required=False, reverse_delete_rule=NULLIFY)
+class Currency(PredefinedEntity, TimestampMixin):
     code = StringField(required=True, max_length=10)
-    name = StringField(required=True, max_length=50)
     symbol = StringField(required=True, max_length=5)
-    is_predefined = BooleanField(default=False)
     currency_type = StringField(required=True, choices=["fiat", "crypto"])
     meta = {
         "indexes": [
@@ -99,7 +108,7 @@ class Currency(BaseDocument, TimestampMixin):
 
     def clean(self) -> None:
         super().clean()
-        CurrencyValidator.validate(self)
+        CurrencyValidator.validate_code_length(self.code, self.currency_type)
 
 
 class UserAppData(BaseDocument, TimestampMixin):
@@ -174,14 +183,11 @@ class CurrencyExchange(BaseDocument):
         return super(CurrencyExchange, self).save(*args, **kwargs)
 
 
-class Category(BaseDocument):
-    user_id = ReferenceField(User, required=False, reverse_delete_rule=CASCADE)
-    name = StringField(required=True, max_length=50)
+class Category(PredefinedEntity):
     type = StringField(
         required=True, choices=[T.INCOME.value, T.EXPENSE.value, T.TRANSFER.value]
     )
     description = StringField(max_length=255)
-    is_predefined = BooleanField(default=False)
     meta = {
         "indexes": [
             {
@@ -196,19 +202,6 @@ class Category(BaseDocument):
             },
         ]
     }
-
-    def clean(self) -> None:
-        if not self.is_predefined and not self.user_id:
-            raise ValidationError("user_id is required for non-predefined categories.")
-
-        if not self.is_predefined:
-            existing_predefined = Category.objects(
-                name=self.name, is_predefined=True
-            ).first()
-            if existing_predefined:
-                raise ValidationError(
-                    f"A predefined category with the name '{self.name}' already exists."
-                )
 
 
 class Transaction(BaseDocument):
@@ -231,11 +224,8 @@ class Transaction(BaseDocument):
         TransactionValidator.validate(self)
 
 
-class AssetType(BaseDocument):
-    user_id = ReferenceField(User, required=False, reverse_delete_rule=CASCADE)
-    name = StringField(required=True, max_length=50)
-    description = StringField(required=False, max_length=255)
-    is_predefined = BooleanField(default=False)
+class AssetType(PredefinedEntity):
+    description = StringField(max_length=255)
     meta = {
         "indexes": [
             {
@@ -250,19 +240,6 @@ class AssetType(BaseDocument):
             },
         ]
     }
-
-    def clean(self) -> None:
-        if not self.is_predefined and not self.user_id:
-            raise ValidationError("user_id is required for non-predefined asset types.")
-
-        if not self.is_predefined:
-            existing_predefined = AssetType.objects(
-                name=self.name, is_predefined=True
-            ).first()
-            if existing_predefined:
-                raise ValidationError(
-                    f"A predefined category with the name '{self.name}' already exists."
-                )
 
 
 class Asset(BaseDocument, TimestampMixin):

@@ -1,8 +1,26 @@
-from models.enums import TransactionTypeEnum as T
 from mongoengine import ValidationError
 
-from models.models import Currency, CurrencyExchange, Transaction
+from models.enums import TransactionTypeEnum as T
+from models.models import CurrencyExchange, Transaction
 from models.validator_utilities import check_value_precision
+
+
+class PredefinedEntityValidator:
+    @staticmethod
+    def validate(entity) -> None:
+        if not entity.is_predefined and not entity.user_id:
+            raise ValidationError(
+                f"user_id is required for non-predefined {entity.__class__.__name__}."
+            )
+
+        if not entity.is_predefined:
+            existing_predefined = entity.__class__.objects(
+                name=entity.name, is_predefined=True
+            ).first()
+            if existing_predefined:
+                raise ValidationError(
+                    f"A predefined {entity.__class__.__name__} with the name '{entity.name}' already exists."
+                )
 
 
 class TransactionValidator:
@@ -46,15 +64,6 @@ class TransactionValidator:
 
 
 class CurrencyValidator:
-    @staticmethod
-    def validate(currency: Currency) -> None:
-        # Validate user_id for non-predefined currencies
-        if not currency.is_predefined and not currency.user_id:
-            raise ValidationError("user_id is required for non-predefined currencies.")
-
-        # Validate code length based on currency_type
-        CurrencyValidator.validate_code_length(currency.code, currency.currency_type)
-
     @staticmethod
     def validate_code_length(code: str, currency_type: str) -> None:
         if currency_type == "fiat":

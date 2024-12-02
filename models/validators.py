@@ -1,7 +1,8 @@
 from mongoengine import ValidationError
 
-from models.models import Transaction
+from models.models import Transaction,Currency ,CurrencyExchange
 
+from models.validator_utilities import check_value_precision
 
 class TransactionValidator:
     @staticmethod
@@ -45,7 +46,7 @@ class TransactionValidator:
 
 class CurrencyValidator:
     @staticmethod
-    def validate(currency) -> None:
+    def validate(currency: Currency) -> None:
         # Validate user_id for non-predefined currencies
         if not currency.is_predefined and not currency.user_id:
             raise ValidationError("user_id is required for non-predefined currencies.")
@@ -67,3 +68,23 @@ class CurrencyValidator:
                 )
         else:
             raise ValidationError(f"Invalid currency_type: {currency_type}")
+
+class CurrencyExchangeValidator:
+    @staticmethod
+    def validate(exchange: CurrencyExchange) -> None:
+        CurrencyExchangeValidator.validate_reverse_pair(exchange)
+        CurrencyExchangeValidator.validate_rate_precision(exchange.rate)
+
+    @staticmethod
+    def validate_reverse_pair(exchange: CurrencyExchange) -> None:
+        reverse_pair_exists = CurrencyExchange.objects(
+            user_id=exchange.user_id,
+            from_currency_id=exchange.to_currency_id,
+            to_currency_id=exchange.from_currency_id,
+        ).first()
+        if reverse_pair_exists:
+            raise ValidationError("A reverse currency exchange pair already exists for this user.")
+
+    @staticmethod
+    def validate_rate_precision(rate):
+        check_value_precision(rate, CurrencyExchange.rate.name)

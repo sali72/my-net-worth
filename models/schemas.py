@@ -6,26 +6,9 @@ from typing import List, Optional
 from fastapi import Query
 from pydantic import BaseModel, EmailStr, Extra, Field, field_validator, model_validator
 
-from models.models import Transaction
+from models.models import CurrencyExchange, Transaction
+from models.validator_utilities import check_value_precision
 from models.validators import CurrencyValidator, TransactionValidator
-
-MAX_INTEGER_PART = 10**10
-MAX_DECIMAL_PART = 8
-
-
-def check_value_precision(value: Decimal, field_name: str) -> Decimal:
-    value = Decimal(str(value))
-    if value == 0:
-        raise ValueError(f"{field_name} cannot be zero")
-    if value.as_tuple().exponent < -MAX_DECIMAL_PART:
-        raise ValueError(
-            f"{field_name} cannot have more than {MAX_DECIMAL_PART} decimal places"
-        )
-    if value >= MAX_INTEGER_PART:
-        raise ValueError(
-            f"{field_name} cannot have an integer part greater than {MAX_INTEGER_PART}"
-        )
-    return value
 
 
 class BaseModelConfigured(BaseModel):
@@ -124,28 +107,26 @@ class CurrencyExchangeCreateSchema(BaseModel):
     from_currency_id: str = Field(..., example="currency_id_123")
     to_currency_id: str = Field(..., example="currency_id_456")
     rate: Decimal = Field(..., example="0.85")
-
-    @field_validator("rate", mode="before")
-    def validate_rate(cls, v):
-        return check_value_precision(v, "Rate")
-
     date: Optional[datetime] = Field(
         default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
     )
+
+    @field_validator(CurrencyExchange.rate.name, mode="before")
+    def validate_rate(cls, value):
+        return check_value_precision(value, "Rate")
 
 
 class CurrencyExchangeUpdateSchema(BaseModel):
     from_currency_id: Optional[str] = Field(None, example="currency_id_123")
     to_currency_id: Optional[str] = Field(None, example="currency_id_456")
     rate: Optional[Decimal] = Field(None, example="0.85")
-
-    @field_validator("rate", mode="before")
-    def validate_rate(cls, v):
-        if v is not None:
-            return check_value_precision(v, "Rate")
-        return v
-
     date: Optional[datetime] = Field(None, example="2023-10-15T14:30:00Z")
+
+    @field_validator(CurrencyExchange.rate.name, mode="before")
+    def validate_rate(cls, value):
+        if value is not None:
+            return check_value_precision(value, "Rate")
+        return value
 
 
 class TransactionBaseSchema(BaseModel):

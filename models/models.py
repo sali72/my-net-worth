@@ -18,7 +18,11 @@ from mongoengine import (
     ValidationError,
 )
 
-from models.validators import TransactionValidator, CurrencyValidator
+from models.validators import (
+    CurrencyExchangeValidator,
+    CurrencyValidator,
+    TransactionValidator,
+)
 
 PRECISION_LIMIT_IN_DB = 10
 
@@ -168,18 +172,7 @@ class CurrencyExchange(BaseDocument):
     }
 
     def save(self, *args, **kwargs) -> None:
-        # Check for the existence of the reverse currency pair
-        reverse_pair_exists = CurrencyExchange.objects(
-            user_id=self.user_id,
-            from_currency_id=self.to_currency_id,
-            to_currency_id=self.from_currency_id,
-        ).first()
-
-        if reverse_pair_exists:
-            raise ValidationError(
-                "A reverse currency exchange pair already exists for this user."
-            )
-
+        CurrencyExchangeValidator.validate_reverse_pair(self)
         return super(CurrencyExchange, self).save(*args, **kwargs)
 
 

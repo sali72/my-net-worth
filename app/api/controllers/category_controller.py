@@ -1,4 +1,5 @@
-from typing import List
+from typing import Dict, List
+
 from app.crud.category_crud import CategoryCRUD
 from models.models import Category
 from models.schemas import CategoryCreateSchema, CategoryUpdateSchema
@@ -9,18 +10,18 @@ class CategoryController:
     @classmethod
     async def create_category(
         cls, category_schema: CategoryCreateSchema, user_id: str
-    ) -> dict:
+    ) -> Dict:
         category = cls._create_category_obj_to_create(category_schema, user_id)
         category_in_db: Category = await CategoryCRUD.create_one(category)
         return category_in_db.to_dict()
 
     @classmethod
-    async def get_category(cls, category_id: str, user_id: str) -> dict:
+    async def get_category(cls, category_id: str, user_id: str) -> Dict:
         category = await CategoryCRUD.get_one_by_user(category_id, user_id)
         return category.to_dict()
 
     @classmethod
-    async def get_all_categories(cls, user_id: str) -> List[dict]:
+    async def get_all_categories(cls, user_id: str) -> List[Dict]:
         categories: List[Category] = await CategoryCRUD.get_all_by_user_id(user_id)
         return [category.to_dict() for category in categories]
 
@@ -30,11 +31,9 @@ class CategoryController:
         category_id: str,
         category_update_schema: CategoryUpdateSchema,
         user_id: str,
-    ) -> dict:
+    ) -> Dict:
         updated_category = cls._create_category_obj_for_update(category_update_schema)
-
         await CategoryCRUD.update_one_by_user(user_id, category_id, updated_category)
-
         category_from_db = await CategoryCRUD.get_one_by_user(category_id, user_id)
         return category_from_db.to_dict()
 

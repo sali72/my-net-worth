@@ -120,37 +120,55 @@ class UserAppDataController:
     async def _validate_exchange_rates(
         cls, user_id: str, current_base_currency: Currency, new_base_currency: Currency
     ) -> None:
+        held_currency_ids = await cls._get_held_currency_ids(user_id)
+        await cls._validate_held_currencies_exchange_rates(
+            user_id, held_currency_ids, new_base_currency.id
+        )
+        await cls._validate_base_currency_exchange_rate(
+            user_id, current_base_currency.id, new_base_currency.id
+        )
+
+    @classmethod
+    async def _get_held_currency_ids(cls, user_id: str) -> set:
         wallets = await WalletCRUD.get_all_by_user_id_optional(user_id)
-        held_currency_ids = {
+        return {
             balance.currency_id.id
             for wallet in wallets
             for balance in wallet.balances_ids
         }
 
+    @classmethod
+    async def _validate_held_currencies_exchange_rates(
+        cls, user_id: str, held_currency_ids: set, new_base_currency_id: str
+    ) -> None:
         for currency_id in held_currency_ids:
-            if currency_id == new_base_currency.id:
+            if currency_id == new_base_currency_id:
                 continue
             if not await CurrencyExchangeCRUD.exchange_rate_exists(
-                user_id, currency_id, new_base_currency.id
+                user_id, currency_id, new_base_currency_id
             ):
                 raise ValidationError(
-                    f"Missing exchange rate for currency {currency_id} to new base currency {new_base_currency.id}"
+                    f"Missing exchange rate for currency `{currency_id}` to new base currency `{new_base_currency_id}`"
                 )
 
+    @classmethod
+    async def _validate_base_currency_exchange_rate(
+        cls, user_id: str, current_base_currency_id: str, new_base_currency_id: str
+    ) -> None:
         if (
-            current_base_currency
+            current_base_currency_id
             and not await CurrencyExchangeCRUD.exchange_rate_exists(
-                user_id, current_base_currency.id, new_base_currency.id
+                user_id, current_base_currency_id, new_base_currency_id
             )
         ):
             raise ValidationError(
-                f"Missing exchange rate between current base currency {current_base_currency.id} and new base currency {new_base_currency.id}"
+                f"Missing exchange rate between current base currency `{current_base_currency_id}` and new base currency `{new_base_currency_id}`"
             )
 
     @classmethod
     async def _set_new_base_currency(
         cls, user_app_data: UserAppData, currency: Currency
-    ) -> Currency:
+    ) -> UserAppData:
         return await UserAppDataCRUD.set_base_currency(user_app_data, currency.id)
 
     @classmethod

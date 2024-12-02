@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from bson import ObjectId
 from mongoengine import (
@@ -69,25 +69,26 @@ class BaseDocument(Document):
         return value_dict
 
 
-class User(BaseDocument):
+class TimestampMixin:
+    created_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
+    updated_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
+
+
+class User(BaseDocument, TimestampMixin):
     name = StringField(required=False, max_length=50)
     username = StringField(required=True, unique=True)
     email = EmailField(required=True, unique=True)
     hashed_password = StringField(required=True)
     role = StringField(required=True, choices=["user", "admin"])
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
 
 
-class Currency(BaseDocument):
+class Currency(BaseDocument, TimestampMixin):
     user_id = ReferenceField("User", required=False, reverse_delete_rule=NULLIFY)
     code = StringField(required=True, max_length=10)
     name = StringField(required=True, max_length=50)
     symbol = StringField(required=True, max_length=5)
     is_predefined = BooleanField(default=False)
     currency_type = StringField(required=True, choices=["fiat", "crypto"])
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
     meta = {
         "indexes": [
             {"fields": ("user_id", "code"), "unique": True},
@@ -101,7 +102,7 @@ class Currency(BaseDocument):
         CurrencyValidator.validate(self)
 
 
-class UserAppData(BaseDocument):
+class UserAppData(BaseDocument, TimestampMixin):
     user_id = ReferenceField(
         "User", required=True, unique=True, reverse_delete_rule=CASCADE
     )
@@ -113,8 +114,6 @@ class UserAppData(BaseDocument):
     wallets_value = DecimalField(
         default=0, min_value=0, precision=PRECISION_LIMIT_IN_DB
     )
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
 
 
 class Balance(BaseDocument):
@@ -135,15 +134,13 @@ class Balance(BaseDocument):
             wallet.save()
 
 
-class Wallet(BaseDocument):
+class Wallet(BaseDocument, TimestampMixin):
     user_id = ReferenceField("User", required=True, reverse_delete_rule=CASCADE)
     name = StringField(required=True, max_length=50)
     type = StringField(required=True, choices=["fiat", "crypto"])
     balances_ids = ListField(
         ReferenceField(Balance, reverse_delete_rule=PULL), required=False
     )
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
     meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
 
     def to_dict(self) -> dict:
@@ -201,11 +198,9 @@ class Category(BaseDocument):
     }
 
     def clean(self) -> None:
-        # Ensure user_id is provided for non-predefined categories
         if not self.is_predefined and not self.user_id:
             raise ValidationError("user_id is required for non-predefined categories.")
 
-        # Check if a predefined category with the same name exists
         if not self.is_predefined:
             existing_predefined = Category.objects(
                 name=self.name, is_predefined=True
@@ -260,7 +255,6 @@ class AssetType(BaseDocument):
         if not self.is_predefined and not self.user_id:
             raise ValidationError("user_id is required for non-predefined asset types.")
 
-        # Check if a predefined category with the same name exists
         if not self.is_predefined:
             existing_predefined = AssetType.objects(
                 name=self.name, is_predefined=True
@@ -271,7 +265,7 @@ class AssetType(BaseDocument):
                 )
 
 
-class Asset(BaseDocument):
+class Asset(BaseDocument, TimestampMixin):
     user_id = ReferenceField(User, required=True, reverse_delete_rule=CASCADE)
     asset_type_id = ReferenceField(
         AssetType, required=False, reverse_delete_rule=NULLIFY
@@ -280,9 +274,6 @@ class Asset(BaseDocument):
     name = StringField(required=True, max_length=50)
     description = StringField(required=False, max_length=255)
     value = DecimalField(required=True, precision=PRECISION_LIMIT_IN_DB)
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
-    meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
 
     def clean(self) -> None:
         super().clean()

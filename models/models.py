@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 from bson import ObjectId
 from mongoengine import (
@@ -19,6 +18,8 @@ from mongoengine import (
     ValidationError,
 )
 
+from models.validators import TransactionValidator
+
 PRECISION_LIMIT_IN_DB = 10
 
 
@@ -35,7 +36,7 @@ class BaseDocument(Document):
 
         return doc_dict
 
-    def _convert_value(self, value):
+    def _convert_value(self, value) -> object:
         """Convert ObjectId or list of ObjectIds/dicts to strings."""
         if isinstance(value, ObjectId):
             return self._convert_objectid_to_str(value)
@@ -249,34 +250,8 @@ class Transaction(BaseDocument):
     description = StringField(max_length=255)
 
     def clean(self) -> None:
-        if self.type == "transfer":
-            self._validate_transfer()
-        elif self.type == "expense":
-            self._validate_expense()
-        elif self.type == "income":
-            self._validate_income()
-
-    def _validate_transfer(self) -> None:
-        if not self.from_wallet_id or not self.to_wallet_id:
-            raise ValidationError(
-                "Both from_wallet_id and to_wallet_id are required for transfers."
-            )
-        if self.from_wallet_id == self.to_wallet_id:
-            raise ValidationError(
-                "from_wallet_id and to_wallet_id cannot be the same for transfers."
-            )
-
-    def _validate_expense(self) -> None:
-        if not self.from_wallet_id:
-            raise ValidationError("from_wallet_id is required for expenses.")
-        if self.to_wallet_id:
-            raise ValidationError("to_wallet_id should not be provided for expenses.")
-
-    def _validate_income(self) -> None:
-        if not self.to_wallet_id:
-            raise ValidationError("to_wallet_id is required for incomes.")
-        if self.from_wallet_id:
-            raise ValidationError("from_wallet_id should not be provided for incomes.")
+        super().clean()
+        TransactionValidator.validate(self)
 
 
 class AssetType(BaseDocument):

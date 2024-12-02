@@ -6,6 +6,9 @@ from typing import List, Optional
 from fastapi import Query
 from pydantic import BaseModel, EmailStr, Extra, Field, field_validator, model_validator
 
+from models.validators import TransactionValidator
+from models.models import Transaction
+
 MAX_INTEGER_PART = 10**10
 MAX_DECIMAL_PART = 8
 
@@ -184,49 +187,9 @@ class TransactionCreateSchema(TransactionBaseSchema):
 
     @model_validator(mode="after")
     def validate_transaction(cls, values):
-        transaction_type = values.type
-        from_wallet_id = values.from_wallet_id
-        to_wallet_id = values.to_wallet_id
-
-        if transaction_type == "transfer":
-            cls._validate_transfer_wallets(from_wallet_id, to_wallet_id)
-        elif transaction_type == "expense":
-            cls._validate_expense_wallet(from_wallet_id, to_wallet_id)
-        elif transaction_type == "income":
-            cls._validate_income_wallet(from_wallet_id, to_wallet_id)
-
+        transaction = Transaction(**values.model_dump())
+        TransactionValidator.validate(transaction)
         return values
-
-    @staticmethod
-    def _validate_transfer_wallets(
-        from_wallet_id: Optional[str], to_wallet_id: Optional[str]
-    ):
-        if not from_wallet_id or not to_wallet_id:
-            raise ValueError(
-                "Both from_wallet_id and to_wallet_id are required for transfers."
-            )
-        if from_wallet_id == to_wallet_id:
-            raise ValueError(
-                "from_wallet_id and to_wallet_id cannot be the same for transfers."
-            )
-
-    @staticmethod
-    def _validate_expense_wallet(
-        from_wallet_id: Optional[str], to_wallet_id: Optional[str]
-    ):
-        if not from_wallet_id:
-            raise ValueError("from_wallet_id is required for expenses.")
-        if to_wallet_id:
-            raise ValueError("to_wallet_id should not be provided for expenses.")
-
-    @staticmethod
-    def _validate_income_wallet(
-        from_wallet_id: Optional[str], to_wallet_id: Optional[str]
-    ):
-        if not to_wallet_id:
-            raise ValueError("to_wallet_id is required for incomes.")
-        if from_wallet_id:
-            raise ValueError("from_wallet_id should not be provided for incomes.")
 
 
 class TransactionUpdateSchema(TransactionBaseSchema):

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from mongoengine import DoesNotExist, Q, QuerySet
 
 from models.models import Category
@@ -17,9 +19,11 @@ class CategoryCRUD:
             (Q(id=category_id) & Q(user_id=user_id))
             | Q(id=category_id, is_predefined=True)
         )
-        
+
     @staticmethod
-    async def get_one_by_user_and_name_optional(name: str, user_id: str) -> Category:
+    async def get_one_by_user_and_name_optional(
+        name: str, user_id: str
+    ) -> Optional[Category]:
         return Category.objects(
             (Q(name=name) & Q(user_id=user_id)) | Q(name=name, is_predefined=True)
         ).first()
@@ -31,20 +35,11 @@ class CategoryCRUD:
     @classmethod
     async def update_one_by_user(
         cls, user_id: str, category_id: str, updated_category: Category
-    ):
+    ) -> None:
         category = await cls.get_one_by_user(category_id, user_id)
         cls.__update_category_fields(category, updated_category)
         category.clean()
         category.save()
-
-    @staticmethod
-    def __update_category_fields(category: Category, updated_category: Category):
-        if updated_category.name is not None:
-            category.name = updated_category.name
-        if updated_category.description is not None:
-            category.description = updated_category.description
-        if updated_category.is_predefined is not None:
-            category.is_predefined = updated_category.is_predefined
 
     @classmethod
     async def delete_one_by_user(cls, category_id: str, user_id: str) -> bool:
@@ -54,3 +49,14 @@ class CategoryCRUD:
                 f"Category with id {category_id} for user {user_id} does not exist"
             )
         return result > 0
+
+    @staticmethod
+    def __update_category_fields(
+        category: Category, updated_category: Category
+    ) -> None:
+        if updated_category.name is not None:
+            category.name = updated_category.name
+        if updated_category.description is not None:
+            category.description = updated_category.description
+        if updated_category.is_predefined is not None:
+            category.is_predefined = updated_category.is_predefined

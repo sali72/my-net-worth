@@ -1,3 +1,5 @@
+from typing import Optional
+
 from bson import ObjectId
 from mongoengine import DoesNotExist, Q, QuerySet
 
@@ -24,7 +26,9 @@ class CurrencyCRUD:
         )
 
     @staticmethod
-    async def get_one_by_user_and_code_optional(code: str, user_id: str) -> Currency:
+    async def get_one_by_user_and_code_optional(
+        code: str, user_id: str
+    ) -> Optional[Currency]:
         return Currency.objects(
             (Q(code=code) & Q(user_id=user_id)) | Q(code=code, is_predefined=True)
         ).first()
@@ -40,22 +44,11 @@ class CurrencyCRUD:
     @classmethod
     async def update_one_by_user(
         cls, user_id: str, currency_id: str, updated_currency: Currency
-    ):
+    ) -> None:
         currency = await cls.get_one_by_user(currency_id, user_id)
         cls.__update_currency_fields(currency, updated_currency)
         currency.clean()
         currency.save()
-
-    @classmethod
-    def __update_currency_fields(cls, currency: Currency, updated_currency: Currency):
-        if updated_currency.code is not None:
-            currency.code = updated_currency.code
-        if updated_currency.name is not None:
-            currency.name = updated_currency.name
-        if updated_currency.symbol is not None:
-            currency.symbol = updated_currency.symbol
-        if updated_currency.currency_type is not None:
-            currency.currency_type = updated_currency.currency_type
 
     @classmethod
     async def delete_one_by_user(cls, currency_id: str, user_id: str) -> bool:
@@ -65,3 +58,16 @@ class CurrencyCRUD:
                 f"Currency with id {currency_id} for user {user_id} does not exist"
             )
         return result > 0
+
+    @classmethod
+    def __update_currency_fields(
+        cls, currency: Currency, updated_currency: Currency
+    ) -> None:
+        if updated_currency.code is not None:
+            currency.code = updated_currency.code
+        if updated_currency.name is not None:
+            currency.name = updated_currency.name
+        if updated_currency.symbol is not None:
+            currency.symbol = updated_currency.symbol
+        if updated_currency.currency_type is not None:
+            currency.currency_type = updated_currency.currency_type

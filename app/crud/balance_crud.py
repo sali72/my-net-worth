@@ -1,5 +1,7 @@
+from typing import Optional
+
 from mongoengine import DoesNotExist
-from bson import ObjectId
+
 from models.models import Balance
 
 
@@ -10,22 +12,20 @@ class BalanceCRUD:
         balance.clean()
         balance.save()
         return balance
-    
+
     @classmethod
     async def update_one(cls, balance: Balance, update_data: dict) -> Balance:
         balance.clean()
-        # Ensure that update_data contains the fields you want to update
         if not update_data:
             raise ValueError("No update parameters provided")
-        
-        # Use the update method with the provided update_data
+
         Balance.objects(id=balance.id).update(**update_data)
         return Balance.objects.get(id=balance.id)
 
     @classmethod
     async def get_one_by_wallet_and_currency_id_optional(
         cls, wallet_id: str, currency_id: str
-    ) -> Balance:
+    ) -> Optional[Balance]:
         return Balance.objects(wallet_id=wallet_id, currency_id=currency_id).first()
 
     @classmethod

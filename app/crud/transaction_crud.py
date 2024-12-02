@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from mongoengine import DoesNotExist, QuerySet
 from mongoengine.queryset.visitor import Q
@@ -26,8 +26,7 @@ class TransactionCRUD:
 
     @classmethod
     async def get_all_by_user_id(cls, user_id: str) -> QuerySet:
-        transactions = Transaction.objects(user_id=user_id)
-        return transactions
+        return Transaction.objects(user_id=user_id)
 
     @classmethod
     async def get_one_by_id(cls, transaction_id: str) -> Transaction:
@@ -36,37 +35,12 @@ class TransactionCRUD:
     @classmethod
     async def update_one_by_user(
         cls, user_id: str, transaction_id: str, updated_transaction: Transaction
-    ):
+    ) -> None:
         transaction = await cls.get_one_by_user(transaction_id, user_id)
         cls._update_transaction_fields(transaction, updated_transaction)
         cls._update_timestamp(transaction)
         transaction.clean()
         transaction.save()
-
-    @staticmethod
-    def _update_transaction_fields(
-        transaction: Transaction, updated_transaction: Transaction
-    ):
-        if updated_transaction.from_wallet_id is not None:
-            transaction.from_wallet_id = updated_transaction.from_wallet_id
-        if updated_transaction.to_wallet_id is not None:
-            transaction.to_wallet_id = updated_transaction.to_wallet_id
-        if updated_transaction.category_id is not None:
-            transaction.category_id = updated_transaction.category_id
-        if updated_transaction.currency_id is not None:
-            transaction.currency_id = updated_transaction.currency_id
-        if updated_transaction.type is not None:
-            transaction.type = updated_transaction.type
-        if updated_transaction.amount is not None:
-            transaction.amount = updated_transaction.amount
-        if updated_transaction.date is not None:
-            transaction.date = updated_transaction.date
-        if updated_transaction.description is not None:
-            transaction.description = updated_transaction.description
-
-    @staticmethod
-    def _update_timestamp(transaction: Transaction):
-        transaction.updated_at = datetime.utcnow()
 
     @classmethod
     async def delete_one_by_user(cls, transaction_id: str, user_id: str) -> bool:
@@ -88,7 +62,6 @@ class TransactionCRUD:
         from_wallet_id: Optional[str] = None,
         to_wallet_id: Optional[str] = None,
     ) -> List[Transaction]:
-
         query = Q(user_id=user_id)
         if start_date:
             query &= Q(date__gte=start_date)
@@ -103,4 +76,29 @@ class TransactionCRUD:
         if to_wallet_id:
             query &= Q(to_wallet_id=to_wallet_id)
 
-        return Transaction.objects(query)
+        return list(Transaction.objects(query))
+
+    @staticmethod
+    def _update_transaction_fields(
+        transaction: Transaction, updated_transaction: Transaction
+    ) -> None:
+        if updated_transaction.from_wallet_id is not None:
+            transaction.from_wallet_id = updated_transaction.from_wallet_id
+        if updated_transaction.to_wallet_id is not None:
+            transaction.to_wallet_id = updated_transaction.to_wallet_id
+        if updated_transaction.category_id is not None:
+            transaction.category_id = updated_transaction.category_id
+        if updated_transaction.currency_id is not None:
+            transaction.currency_id = updated_transaction.currency_id
+        if updated_transaction.type is not None:
+            transaction.type = updated_transaction.type
+        if updated_transaction.amount is not None:
+            transaction.amount = updated_transaction.amount
+        if updated_transaction.date is not None:
+            transaction.date = updated_transaction.date
+        if updated_transaction.description is not None:
+            transaction.description = updated_transaction.description
+
+    @staticmethod
+    def _update_timestamp(transaction: Transaction) -> None:
+        transaction.updated_at = datetime.utcnow()

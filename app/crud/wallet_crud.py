@@ -42,14 +42,6 @@ class WalletCRUD:
             )
 
     @classmethod
-    async def update_wallet_total_value(
-        cls, wallet: Wallet, total_value: Decimal
-    ) -> None:
-        wallet.total_value = total_value
-        wallet.clean()
-        wallet.save()
-
-    @classmethod
     async def update_one_by_user(
         cls, user_id: str, wallet_id: str, updated_wallet: Wallet
     ) -> None:

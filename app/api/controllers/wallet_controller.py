@@ -23,8 +23,6 @@ class WalletController:
         wallet_in_db = await WalletCRUD.create_one(wallet)
         await cls._save_balances(wallet_in_db, balances)
 
-        await cls._calculate_and_update_wallet_value(wallet_in_db.id, user.id)
-
         wallet_with_balances = await WalletCRUD.get_one_by_id(wallet_in_db.id)
 
         await cls._update_user_app_data_with_wallet_value(
@@ -64,7 +62,6 @@ class WalletController:
 
         await WalletCRUD.update_one_by_user(user.id, wallet_id, updated_wallet)
 
-        await cls._calculate_and_update_wallet_value(wallet_id, user.id)
         await cls.calculate_total_wallet_value(user)
 
         wallet_from_db = await WalletCRUD.get_one_by_id(wallet_id)
@@ -98,8 +95,6 @@ class WalletController:
             user.id, balance_value_to_add
         )
 
-        await cls._calculate_and_update_wallet_value(wallet_id, user.id)
-
         updated_wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
         return updated_wallet.to_dict()
 
@@ -119,20 +114,8 @@ class WalletController:
         )
         await BalanceCRUD.delete_one_by_wallet_and_currency_id(wallet_id, currency_id)
 
-        await cls._calculate_and_update_wallet_value(wallet_id, user.id)
-
         updated_wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
         return updated_wallet.to_dict()
-
-    @classmethod
-    async def _calculate_and_update_wallet_value(
-        cls, wallet_id: str, user_id: str
-    ) -> None:
-        wallet = await WalletCRUD.get_one_by_user(wallet_id, user_id)
-        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
-            user_id
-        )
-        await cls._calculate_wallet_value(wallet, base_currency_id, user_id)
 
     @classmethod
     async def calculate_total_wallet_value(cls, user: User) -> Decimal:
@@ -180,7 +163,6 @@ class WalletController:
             total_value += await cls._convert_balance_to_base_currency(
                 balance, base_currency_id, user_id
             )
-        await WalletCRUD.update_wallet_total_value(wallet, total_value)
         return total_value
 
     @classmethod

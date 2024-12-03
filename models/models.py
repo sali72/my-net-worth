@@ -17,6 +17,7 @@ from mongoengine import (
     ReferenceField,
     StringField,
     ValidationError,
+    signals
 )
 
 from models.enums import TransactionTypeEnum as T
@@ -134,14 +135,39 @@ class Balance(BaseDocument):
     amount = DecimalField(min_value=0, required=True, precision=PRECISION_LIMIT_IN_DB)
     meta = {"indexes": [{"fields": ("wallet_id", "currency_id"), "unique": True}]}
 
-    def save(self, *args, **kwargs) -> None:
-        """Override save to update the Wallet's balances_ids."""
-        is_new = self.pk is None
-        wallet = Wallet.objects.get(id=self.wallet_id.id)
-        super(Balance, self).save(*args, **kwargs)
-        if is_new and self.id not in wallet.balances_ids:
-            wallet.balances_ids.append(self.id)
+    @classmethod
+    def pre_save(cls, sender, document, **kwargs):
+        # Check if the document is new and update wallets total-value
+        is_new = document.pk is None
+        wallet = Wallet.objects.get(id=document.wallet_id.id)
+        if is_new:
+            wallet.total_value += document.amount
+        else:
+            current_balance = Balance.objects.get(id=document.id)
+            difference = document.amount - current_balance.amount
+            wallet.total_value += difference
+        wallet.save()
+
+    @classmethod
+    def post_save(cls, sender, document, **kwargs):
+        # Update wallet's balance_ids if it's a new balance
+        is_new = kwargs.get("created", False)
+        wallet = Wallet.objects.get(id=document.wallet_id.id)
+        if is_new and document.id not in wallet.balances_ids:
+            wallet.balances_ids.append(document.id)
             wallet.save()
+
+    @classmethod
+    def pre_delete(cls, sender, document, **kwargs):
+        # update wallets total-value
+        wallet = Wallet.objects.get(id=document.wallet_id.id)
+        wallet.total_value -= document.amount
+        wallet.save()
+
+
+signals.pre_save.connect(Balance.pre_save, sender=Balance)
+signals.post_save.connect(Balance.post_save, sender=Balance)
+signals.pre_delete.connect(Balance.pre_delete, sender=Balance)
 
 
 class Wallet(BaseDocument, TimestampMixin):

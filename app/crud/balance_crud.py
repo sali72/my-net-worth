@@ -15,11 +15,18 @@ class BalanceCRUD:
 
     @classmethod
     async def update_one(cls, balance: Balance, update_data: dict) -> Balance:
-        balance.clean()
         if not update_data:
             raise ValueError("No update parameters provided")
 
-        Balance.objects(id=balance.id).update(**update_data)
+        existing_balance: Balance = Balance.objects.get(id=balance.id)
+
+        # Update the fields of the existing balance
+        for key, value in update_data.items():
+            setattr(existing_balance, key, value)
+
+        existing_balance.save()
+
+        # Return the updated balance
         return Balance.objects.get(id=balance.id)
 
     @classmethod

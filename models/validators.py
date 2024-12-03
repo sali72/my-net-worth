@@ -1,8 +1,6 @@
 from mongoengine import ValidationError
 
 from models.enums import TransactionTypeEnum as T
-from models.models import CurrencyExchange, Transaction
-from models.validator_utilities import check_value_precision
 
 
 class PredefinedEntityValidator:
@@ -25,7 +23,7 @@ class PredefinedEntityValidator:
 
 class TransactionValidator:
     @staticmethod
-    def validate(transaction: Transaction) -> None:
+    def validate(transaction) -> None:
         if transaction.type == T.TRANSFER.value:
             TransactionValidator._validate_transfer(transaction)
         elif transaction.type == T.EXPENSE.value:
@@ -36,7 +34,7 @@ class TransactionValidator:
             raise ValidationError(f"Unknown transaction type: {transaction.type}")
 
     @staticmethod
-    def _validate_transfer(transaction: Transaction) -> None:
+    def _validate_transfer(transaction) -> None:
         if not transaction.from_wallet_id or not transaction.to_wallet_id:
             raise ValidationError(
                 "Both 'from_wallet_id' and 'to_wallet_id' are required for transfers."
@@ -47,14 +45,14 @@ class TransactionValidator:
             )
 
     @staticmethod
-    def _validate_expense(transaction: Transaction) -> None:
+    def _validate_expense(transaction) -> None:
         if not transaction.from_wallet_id:
             raise ValidationError("'from_wallet_id' is required for expenses.")
         if transaction.to_wallet_id:
             raise ValidationError("'to_wallet_id' should not be provided for expenses.")
 
     @staticmethod
-    def _validate_income(transaction: Transaction) -> None:
+    def _validate_income(transaction) -> None:
         if not transaction.to_wallet_id:
             raise ValidationError("'to_wallet_id' is required for incomes.")
         if transaction.from_wallet_id:
@@ -82,13 +80,12 @@ class CurrencyValidator:
 
 class CurrencyExchangeValidator:
     @staticmethod
-    def validate(exchange: CurrencyExchange) -> None:
+    def validate(exchange) -> None:
         CurrencyExchangeValidator.validate_reverse_pair(exchange)
-        CurrencyExchangeValidator.validate_rate_precision(exchange.rate)
 
     @staticmethod
-    def validate_reverse_pair(exchange: CurrencyExchange) -> None:
-        reverse_pair_exists = CurrencyExchange.objects(
+    def validate_reverse_pair(exchange) -> None:
+        reverse_pair_exists = exchange.__class__.objects(
             user_id=exchange.user_id,
             from_currency_id=exchange.to_currency_id,
             to_currency_id=exchange.from_currency_id,
@@ -97,7 +94,3 @@ class CurrencyExchangeValidator:
             raise ValidationError(
                 "A reverse currency exchange pair already exists for this user."
             )
-
-    @staticmethod
-    def validate_rate_precision(rate):
-        check_value_precision(rate, CurrencyExchange.rate.name)

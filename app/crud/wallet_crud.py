@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import List, Optional
+from decimal import Decimal
+from typing import List
 
 from fastapi import HTTPException, status
 from mongoengine import DoesNotExist, QuerySet
@@ -12,6 +13,7 @@ class WalletCRUD:
 
     @classmethod
     async def create_one(cls, wallet: Wallet) -> Wallet:
+        wallet.clean()
         wallet.save()
         return wallet
 
@@ -40,6 +42,14 @@ class WalletCRUD:
             )
 
     @classmethod
+    async def update_wallet_total_value(
+        cls, wallet: Wallet, total_value: Decimal
+    ) -> None:
+        wallet.total_value = total_value
+        wallet.clean()
+        wallet.save()
+
+    @classmethod
     async def update_one_by_user(
         cls, user_id: str, wallet_id: str, updated_wallet: Wallet
     ) -> None:
@@ -47,6 +57,7 @@ class WalletCRUD:
         cls.__update_wallet_fields(wallet, updated_wallet)
         await cls.__update_balances(wallet, updated_wallet)
         cls.__update_timestamp(wallet)
+        wallet.clean()
         wallet.save()
 
     @staticmethod

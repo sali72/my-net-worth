@@ -22,10 +22,11 @@ class WalletController:
 
         wallet_in_db = await WalletCRUD.create_one(wallet)
         await cls._save_balances(wallet_in_db, balances)
+
+        await cls._calculate_and_update_wallet_value(wallet_in_db.id, user.id)
+
         wallet_with_balances = await WalletCRUD.get_one_by_id(wallet_in_db.id)
 
-        # TODO: refactor and after adding total value for each wallet,
-        # move updating user app data to route level
         await cls._update_user_app_data_with_wallet_value(
             user, wallet_with_balances, add=True
         )
@@ -46,8 +47,13 @@ class WalletController:
     async def update_wallet(
         cls, wallet_id: str, wallet_update_schema: WalletUpdateSchema, user: User
     ) -> Dict:
+        balances = (
+            await cls._create_balance_objs_list(wallet_update_schema.balances_ids)
+            if wallet_update_schema.balances_ids
+            else None
+        )
         updated_wallet = await cls._create_wallet_obj(
-            wallet_update_schema, user.id, is_update=True
+            wallet_update_schema, user.id, balances, is_update=True
         )
         current_wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
 
@@ -58,8 +64,8 @@ class WalletController:
 
         await WalletCRUD.update_one_by_user(user.id, wallet_id, updated_wallet)
 
-        if updated_wallet.balances_ids:
-            await cls.calculate_total_wallet_value(user)
+        await cls._calculate_and_update_wallet_value(wallet_id, user.id)
+        await cls.calculate_total_wallet_value(user)
 
         wallet_from_db = await WalletCRUD.get_one_by_id(wallet_id)
         return wallet_from_db.to_dict()
@@ -92,6 +98,9 @@ class WalletController:
             user.id, balance_value_to_add
         )
 
+        await cls._calculate_and_update_wallet_value(wallet_id, user.id)
+
+        updated_wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
         return updated_wallet.to_dict()
 
     @classmethod
@@ -109,9 +118,21 @@ class WalletController:
             user.id, balance_value_to_remove
         )
         await BalanceCRUD.delete_one_by_wallet_and_currency_id(wallet_id, currency_id)
-        updated_wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
 
+        await cls._calculate_and_update_wallet_value(wallet_id, user.id)
+
+        updated_wallet = await WalletCRUD.get_one_by_user(wallet_id, user.id)
         return updated_wallet.to_dict()
+
+    @classmethod
+    async def _calculate_and_update_wallet_value(
+        cls, wallet_id: str, user_id: str
+    ) -> None:
+        wallet = await WalletCRUD.get_one_by_user(wallet_id, user_id)
+        base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
+            user_id
+        )
+        await cls._calculate_wallet_value(wallet, base_currency_id, user_id)
 
     @classmethod
     async def calculate_total_wallet_value(cls, user: User) -> Decimal:
@@ -159,6 +180,7 @@ class WalletController:
             total_value += await cls._convert_balance_to_base_currency(
                 balance, base_currency_id, user_id
             )
+        await WalletCRUD.update_wallet_total_value(wallet, total_value)
         return total_value
 
     @classmethod
@@ -171,13 +193,12 @@ class WalletController:
 
     @classmethod
     async def _create_wallet_obj(
-        cls, wallet_schema: WalletCreateSchema, user_id: str, is_update: bool = False
+        cls,
+        wallet_schema: WalletCreateSchema,
+        user_id: str,
+        balances: List[Balance] = None,
+        is_update: bool = False,
     ) -> Wallet:
-        balances = (
-            await cls._create_balance_objs_list(wallet_schema.balances_ids)
-            if wallet_schema.balances_ids
-            else None
-        )
         return Wallet(
             user_id=user_id,
             name=wallet_schema.name,

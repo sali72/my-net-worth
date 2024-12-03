@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from bson import ObjectId
 from mongoengine import (
@@ -70,17 +71,6 @@ class BaseDocument(Document):
         return value_dict
 
 
-class PredefinedEntity(BaseDocument):
-    user_id = ReferenceField("User", required=False, reverse_delete_rule=CASCADE)
-    name = StringField(required=True, max_length=50)
-    is_predefined = BooleanField(default=False)
-    meta = {"abstract": True}
-
-    def clean(self) -> None:
-        super().clean()
-        PredefinedEntityValidator.validate(self)
-
-
 class TimestampMixin:
     created_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
     updated_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
@@ -92,6 +82,17 @@ class User(BaseDocument, TimestampMixin):
     email = EmailField(required=True, unique=True)
     hashed_password = StringField(required=True)
     role = StringField(required=True, choices=["user", "admin"])
+
+
+class PredefinedEntity(BaseDocument):
+    user_id = ReferenceField("User", required=False, reverse_delete_rule=CASCADE)
+    name = StringField(required=True, max_length=50)
+    is_predefined = BooleanField(default=False)
+    meta = {"abstract": True}
+
+    def clean(self) -> None:
+        super().clean()
+        PredefinedEntityValidator.validate(self)
 
 
 class Currency(PredefinedEntity, TimestampMixin):
@@ -150,12 +151,16 @@ class Wallet(BaseDocument, TimestampMixin):
     balances_ids = ListField(
         ReferenceField(Balance, reverse_delete_rule=PULL), required=False
     )
+    total_value = DecimalField(
+        required=False, default=Decimal("0.00"), precision=PRECISION_LIMIT_IN_DB
+    )
     meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}
 
     def to_dict(self) -> dict:
         doc_dict = super().to_dict()
         balances = self.balances_ids
         doc_dict["balances_ids"] = [balance.to_dict() for balance in balances]
+        doc_dict["total_value"] = str(self.total_value)
         return doc_dict
 
 

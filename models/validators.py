@@ -94,3 +94,10 @@ class CurrencyExchangeValidator:
             raise ValidationError(
                 "A reverse currency exchange pair already exists for this user."
             )
+
+    @staticmethod
+    def validate_input_currency_ids(exchange) -> None:
+        if exchange.from_currency_id == exchange.to_currency_id:
+            raise ValidationError(
+                "from_currency_id can't be same as to_currency_id."
+            )

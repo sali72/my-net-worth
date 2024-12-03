@@ -9,7 +9,11 @@ from models.enums import TransactionTypeEnum
 from models.enums import TransactionTypeEnum as T
 from models.models import CurrencyExchange, Transaction
 from models.validator_utilities import check_value_precision
-from models.validators import CurrencyValidator, TransactionValidator
+from models.validators import (
+    CurrencyExchangeValidator,
+    CurrencyValidator,
+    TransactionValidator,
+)
 
 
 class BaseModelConfigured(BaseModel):
@@ -115,6 +119,12 @@ class CurrencyExchangeCreateSchema(BaseModel):
     @field_validator(CurrencyExchange.rate.name, mode="before")
     def validate_rate(cls, value):
         return check_value_precision(value, "Rate")
+
+    @model_validator(mode="after")
+    def validate_transaction(cls, values):
+        exchange = CurrencyExchange(**values.model_dump())
+        CurrencyExchangeValidator.validate_input_currency_ids(exchange)
+        return values
 
 
 class CurrencyExchangeUpdateSchema(BaseModel):

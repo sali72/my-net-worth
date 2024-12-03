@@ -83,7 +83,7 @@ async def delete_wallet_route(
     return ResponseSchema(message="Wallet deleted successfully")
 
 
-@router.post("/{wallet_id}/currency-balance", response_model=ResponseSchema)
+@router.post("/{wallet_id}/balance", response_model=ResponseSchema)
 async def add_balance_route(
     balance: BalanceSchema,
     wallet_id: str = Path(..., description="The ID of the wallet to update"),
@@ -96,7 +96,7 @@ async def add_balance_route(
 
 
 @router.delete(
-    "/{wallet_id}/currency-balance/{currency_id}", response_model=ResponseSchema
+    "/{wallet_id}/balance/{currency_id}", response_model=ResponseSchema
 )
 async def remove_balance_route(
     wallet_id: str = Path(..., description="The ID of the wallet to update"),

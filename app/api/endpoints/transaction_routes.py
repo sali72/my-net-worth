@@ -19,6 +19,7 @@ router = APIRouter(prefix="/transactions", tags=["Transaction"])
 
 @router.post(
     "",
+    response_model=ResponseSchema,
     responses={
         200: {"model": ResponseSchema, "description": "Successful Response"},
         400: {"model": ErrorResponseModel, "description": "Bad Request"},
@@ -27,6 +28,16 @@ router = APIRouter(prefix="/transactions", tags=["Transaction"])
 async def create_transaction_route(
     transaction_schema: TransactionCreateSchema, user=Depends(has_role(R.USER))
 ) -> ResponseSchema:
+    """
+    Create a new transaction and adjust wallet balances.
+
+    Args:
+        transaction_schema (TransactionCreateSchema): The schema containing transaction details.
+        user (User): The current user, injected by dependency.
+
+    Returns:
+        ResponseSchema: The response containing the created transaction details and a success message.
+    """
     transaction = await TransactionController.create_transaction(
         transaction_schema, user
     )
@@ -44,6 +55,16 @@ async def filter_transactions_route(
     params: TransactionFilterParams = Query(...),
     user=Depends(has_role(R.USER)),
 ) -> ResponseSchema:
+    """
+    Retrieve transactions based on specified filters.
+
+    Args:
+        params (TransactionFilterParams): The filters to apply to the transaction retrieval.
+        user (User): The current user, injected by dependency.
+
+    Returns:
+        ResponseSchema: The response containing the filtered transactions and a success message.
+    """
     transactions = await TransactionController.filter_transactions(
         user.id,
         params.start_date,
@@ -64,6 +85,16 @@ async def transaction_statistics_route(
     params: TransactionStatisticsParams = Query(...),
     user=Depends(has_role(R.USER)),
 ) -> ResponseSchema:
+    """
+    Calculate transaction statistics for a user.
+
+    Args:
+        params (TransactionStatisticsParams): The parameters for calculating statistics.
+        user (User): The current user, injected by dependency.
+
+    Returns:
+        ResponseSchema: The response containing transaction statistics and a success message.
+    """
     statistics = await TransactionController.calculate_statistics(
         user.id, params.start_date, params.end_date
     )
@@ -80,6 +111,16 @@ async def read_transaction_route(
     ),
     user=Depends(has_role(R.USER)),
 ) -> ResponseSchema:
+    """
+    Retrieve a specific transaction by its ID.
+
+    Args:
+        transaction_id (str): The ID of the transaction to retrieve.
+        user (User): The current user, injected by dependency.
+
+    Returns:
+        ResponseSchema: The response containing the transaction details and a success message.
+    """
     transaction = await TransactionController.get_transaction(transaction_id, user.id)
     return ResponseSchema(
         data={"transaction": transaction}, message="Transaction retrieved successfully"
@@ -88,6 +129,15 @@ async def read_transaction_route(
 
 @router.get("", response_model=ResponseSchema)
 async def read_all_transactions_route(user=Depends(has_role(R.USER))) -> ResponseSchema:
+    """
+    Retrieve all transactions for the user.
+
+    Args:
+        user (User): The current user, injected by dependency.
+
+    Returns:
+        ResponseSchema: The response containing all transactions and a success message.
+    """
     transactions = await TransactionController.get_all_transactions(user.id)
     return ResponseSchema(
         data={"transactions": transactions},
@@ -101,6 +151,17 @@ async def update_transaction_route(
     transaction_id: str = Path(..., description="The ID of the transaction to update"),
     user=Depends(has_role(R.USER)),
 ) -> ResponseSchema:
+    """
+    Update an existing transaction.
+
+    Args:
+        transaction_schema (TransactionUpdateSchema): The schema containing updated transaction details.
+        transaction_id (str): The ID of the transaction to update.
+        user (User): The current user, injected by dependency.
+
+    Returns:
+        ResponseSchema: The response containing the updated transaction details and a success message.
+    """
     updated_transaction = await TransactionController.update_transaction(
         transaction_id, transaction_schema, user.id
     )
@@ -117,6 +178,16 @@ async def delete_transaction_route(
     transaction_id: str = Path(..., description="The ID of the transaction to delete"),
     user=Depends(has_role(R.USER)),
 ) -> ResponseSchema:
+    """
+    Delete a transaction by its ID.
+
+    Args:
+        transaction_id (str): The ID of the transaction to delete.
+        user (User): The current user, injected by dependency.
+
+    Returns:
+        ResponseSchema: The response containing a success message.
+    """
     transaction = await TransactionController.delete_transaction(
         transaction_id, user.id
     )

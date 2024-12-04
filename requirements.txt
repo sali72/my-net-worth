@@ -1,0 +1,10 @@
+fastapi
+mongoengine
+passlib
+pydantic
+PyJWT
+pymongo
+python-dotenv
+zxcvbn
+blinker
+uvicorn

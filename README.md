@@ -14,10 +14,12 @@ My Net Worth is a personal financial manager and planner application designed to
 - [Usage Examples](#usage-examples)
 - [Authentication](#authentication)
 - [Error Handling](#error-handling)
-- [Testing](#testing)
-- [Contributing](#contributing)
 - [License](#license)
 - [Contact Information](#contact-information)
+
+<br>
+
+- [*More Details*](#navigation-panel)
 
 ## Features
 
@@ -198,38 +200,6 @@ Errors are returned with appropriate HTTP status codes and a JSON response conta
 }
 ```
 
-## Testing
-
-Will be added in future.
-
-## Contributing
-
-Contributions are welcome!
-
-Please follow the steps below:
-
-1. **Fork the Repository**
-
-2. **Create a Branch**
-
-   ```bash
-   git checkout -b feature/YourFeature
-   ```
-
-3. **Commit Your Changes**
-
-   ```bash
-   git commit -m "Add your feature"
-   ```
-
-4. **Push to the Branch**
-
-   ```bash
-   git push origin feature/YourFeature
-   ```
-
-5. **Open a Pull Request**
-
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
@@ -241,4 +211,12 @@ For questions or feedback, please reach out:
 - **Email**: [sahashemi072@gmail.com](mailto:sahashemi072@gmail.com)
 - **GitHub**: [sali72](https://github.com/sali72)
 
+
 ---
+
+## Navigation Panel
+For more technical details look at other readme files:
+
+- [Main README](README.md)
+- [Developer Documentation](README-DEV.md)
+- [Models Documentation](README-MODELS.md)

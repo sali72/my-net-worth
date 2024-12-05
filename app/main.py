@@ -15,22 +15,13 @@ from app.api.endpoints.user_app_data_routes import router as user_app_data_route
 from app.api.endpoints.wallet_routes import router as wallet_routes
 from commons.exception_handlers import base_exception_handler, http_exception_handler
 from database.database import connect_to_db
-from database.initialize_db import (
-    initialize_common_asset_types,
-    initialize_common_categories,
-    initialize_fiat_and_crypto_currencies,
-)
+
 # from models.models import AssetType
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    connect_to_db()
-    # # Initialize db with predefined values
-    # await initialize_fiat_and_crypto_currencies()
-    # await initialize_common_asset_types()
-    # await initialize_common_categories()
-    
+    await connect_to_db()
     # # Fix indexes of collections if needed
     # AssetType._get_collection().drop_indexes()
     # AssetType.ensure_indexes()

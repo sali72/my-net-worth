@@ -2,9 +2,11 @@ fastapi
 mongoengine
 passlib
 pydantic
+pydantic[email]
 PyJWT
 pymongo
 python-dotenv
+python-multipart
 zxcvbn
 blinker
 uvicorn

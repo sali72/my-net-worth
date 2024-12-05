@@ -1,0 +1,40 @@
+services:
+  app:
+    container_name: my-net-worth
+    image: my-net-worth-image
+    command: uvicorn app.main:app --reload --host  0.0.0.0 --port  5000
+    build: .
+    volumes:
+      - ./:/app
+    ports:
+      - 7500:5000
+    depends_on:
+      - mongodb
+    networks:
+      - net-worth-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "4"
+
+  mongodb:
+    container_name: mongodb
+    image: mongo:4.2.3-bionic
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - net-worth-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "4"
+    env_file:
+      - .env
+
+volumes:
+  mongo-data:
+
+networks:
+  net-worth-net:

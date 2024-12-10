@@ -18,6 +18,7 @@ MONGO_ROOT_USERNAME = os.getenv("MONGO_ROOT_USERNAME")
 MONGO_ROOT_PASSWORD = os.getenv("MONGO_ROOT_PASSWORD")
 MONGO_HOST = os.getenv("MONGO_HOST")
 MONGO_LOCAL_HOST = os.getenv("MONGO_LOCAL_HOST")
+MONGO_ATLAS_CONNECTION_STRING = os.getenv("MONGO_ATLAS_CONNECTION_STRING")
 TEST_MODE = os.getenv("TEST_MODE")
 
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +34,7 @@ async def connect_to_db():
                 port=27017,
                 serverSelectionTimeoutMS=10000,
             )
-        else:
+        elif TEST_MODE == "false":
             mongoengine.connect(
                 db=MONGO_DATABASE,
                 host=MONGO_HOST,
@@ -45,6 +46,11 @@ async def connect_to_db():
                 # authentication_source="admin",
                 serverSelectionTimeoutMS=10000,
             )
+        elif TEST_MODE == "atlas":
+            mongoengine.connect(
+                host=MONGO_ATLAS_CONNECTION_STRING,
+                serverSelectionTimeoutMS=30000,
+            )
 
         # Perform a simple operation to verify the connection
         connection = get_connection()
@@ -55,7 +61,7 @@ async def connect_to_db():
         await initialize_common_categories()
         try:
             if connection[MONGO_DATABASE].list_collection_names():
-                logger.info(" Connected to MongoDB successfully")
+                logger.info(f" Connected to MongoDB successfully, mode: {TEST_MODE}")
             else:
                 logger.error(" Failed to connect to MongoDB")
         except Exception as e:

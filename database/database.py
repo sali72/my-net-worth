@@ -5,6 +5,7 @@ import mongoengine
 from dotenv import load_dotenv
 from mongoengine.connection import get_connection
 
+from commons.logging_config import setup_logging
 from database.initialize_db import (
     initialize_common_asset_types,
     initialize_common_categories,
@@ -21,7 +22,8 @@ MONGO_LOCAL_HOST = os.getenv("MONGO_LOCAL_HOST")
 MONGO_ATLAS_CONNECTION_STRING = os.getenv("MONGO_ATLAS_CONNECTION_STRING")
 TEST_MODE = os.getenv("TEST_MODE")
 
-logging.basicConfig(level=logging.INFO)
+
+setup_logging()
 logger = logging.getLogger(__name__)
 
 

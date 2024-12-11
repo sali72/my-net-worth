@@ -273,7 +273,7 @@ For questions or feedback, please reach out:
 ## Navigation Panel
 For more technical details look at other readme files:
 
-- [Main README](README.md)
-- [Step by Step Guide](README-GUIDE.md)
-- [Developer Documentation](README-DEV.md)
-- [Models Documentation](README-MODELS.md)
+- [Main README](/README.md)
+- [Step by Step Guide](/docs/README-GUIDE.md)
+- [Developer Documentation](/docs/README-DEV.md)
+- [Models Documentation](/docs/README-MODELS.md)

@@ -76,6 +76,8 @@ my-net-worth-api/
 ├── database/
 │   ├── database.py                     (database connection and initialization)
 │   ├── initialize_db.py                (database initialization scripts)
+├── docs/
+│   └── ...                             (includes all docs other than main readme)
 ├── models/
 │   ├── enums.py                        (enum classes used across the app)
 │   ├── models.py                       (all MongoEngine models)
@@ -313,7 +315,7 @@ We welcome contributions! Please follow these guidelines:
 
 Use the links below to navigate between different sections of the documentation:
 
-- [Main README](README.md)
-- [Step by Step Guide](README-GUIDE.md)
-- [Developer Documentation](README-DEV.md)
-- [Models Documentation](README-MODELS.md)
+- [Main README](/README.md)
+- [Step by Step Guide](/docs/README-GUIDE.md)
+- [Developer Documentation](/docs/README-DEV.md)
+- [Models Documentation](/docs/README-MODELS.md)

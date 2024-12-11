@@ -31,7 +31,11 @@ This document provides an overview of the data models used in the **My Net Worth
 
 # Data Models
 
-The application's data layer is modeled using MongoEngine document models, defined in `models/models.py`. The models represent the various entities and their relationships in the **My Net Worth** application. This section provides an overview of each model, their functionality, and the purpose of each field.
+The application's data layer is modeled using MongoEngine document models, defined in `models/models.py`.
+
+The diagram represents persisted models in DB and their relationships with each other:
+
+![Relationship Diagram](/docs/relationship_diagram.png)
 
 ## Base Classes
 
@@ -290,7 +294,7 @@ Represents a user's asset.
 
 Use the links below to navigate between different sections of the documentation:
 
-- [Main README](README.md)
-- [Step by Step Guide](README-GUIDE.md)
-- [Developer Documentation](README-DEV.md)
-- [Models Documentation](README-MODELS.md)
+- [Main README](/README.md)
+- [Step by Step Guide](/docs/README-GUIDE.md)
+- [Developer Documentation](/docs/README-DEV.md)
+- [Models Documentation](/docs/README-MODELS.md)

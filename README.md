@@ -3,6 +3,11 @@
 
 My Net Worth is a personal financial manager and planner application designed to help users keep track of their assets and currencies, calculate their net worth, and manage their financial transactions. The application supports various asset types and currencies, including fiat and cryptocurrencies, allowing users to have a comprehensive view of their financial status.
 
+The app is currently live for demo on this link:
+[https://my-net-worth.onrender.com/docs](https://my-net-worth.onrender.com/docs)
+
+❗Your first request will be slow, because app spins down with inactivity (It's about deploying on render)
+
 ## Table of Contents
 
 - [Features](#features)
@@ -40,40 +45,55 @@ Before you begin, ensure you have met the following requirements:
 - **Git**: Version control system to clone the repository.
 - **Virtual Environment Tool**: (`venv` or `virtualenv`) Recommended for dependency management.
 
+Certainly! Below is the revised documentation section that includes both the Docker Compose setup and the instructions for deploying without Docker Compose, while retaining the configuration details:
+
+
 ## Installation
 
-Follow these steps to set up the project locally:
+You can either try the app with or without docker compose but first clone the repository:
 
-1. **Clone the Repository**
+**Clone the Repository**
 
    ```bash
    git clone https://github.com/yourusername/my-net-worth-api.git
    cd my-net-worth-api
    ```
 
-2. **Create and Activate a Virtual Environment**
+- **With Docker Compose**
 
-   - **On Windows:**
-
-     ```bash
-     python -m venv venv
-     venv\Scripts\activate
-     ```
-
-   - **On Unix or MacOS:**
-
-     ```bash
-     python3 -m venv venv
-     source venv/bin/activate
-     ```
-
-3. **Install Dependencies**
+   If you prefer using Docker Compose, ensure you have Docker installed on your machine. Then, run the following command to build and start the services:
 
    ```bash
-   pip install -r requirements.txt
+   docker-compose up --build
    ```
 
-   *Note*: Ensure that `requirements.txt` is in the project root.
+   This will start the application and a MongoDB service as defined in the `docker-compose.yml` file.
+
+- **Without Docker Compose**
+
+   - **Create and Activate a Virtual Environment**
+
+     - **On Windows:**
+
+       ```bash
+       python -m venv venv
+       venv\Scripts\activate
+       ```
+
+     - **On Unix or MacOS:**
+
+       ```bash
+       python3 -m venv venv
+       source venv/bin/activate
+       ```
+
+   - **Install Dependencies**
+
+     ```bash
+     pip install -r requirements.txt
+     ```
+
+     *Note*: Ensure that `requirements.txt` is in the project root.
 
 ## Configuration
 
@@ -83,27 +103,63 @@ Follow these steps to set up the project locally:
 
     ```env
     # DB config
-    TEST_MODE=true
+    DB_MODE=local
     MONGO_DATABASE=my_net_worth_db
     MONGO_ROOT_USERNAME=your_db_username
     MONGO_ROOT_PASSWORD=your_db_password
     MONGO_HOST=mongodb
     MONGO_LOCAL_HOST=mongodb://localhost:27017
+    MONGO_ATLAS_CONNECTION_STRING=your_mongo_atlas_connection_string
 
     # App config
-    ACCESS_TOKEN_EXPIRE_MINUTES = 30
-    SECRET_KEY = your_secret_key
-    ALGORITHM = HS256
-    # MINIMUM_PASSWORD_STRENGTH is from 4
-    MINIMUM_PASSWORD_STRENGTH = 3
+    ACCESS_TOKEN_EXPIRE_MINUTES=30
+    SECRET_KEY=your_secret_key
+    ALGORITHM=HS256
+    MINIMUM_PASSWORD_STRENGTH=3
     ```
 
-   Replace `your_secret_key`, `your_db_username`, and `your_db_password` with your actual credentials.
-   Also create a db in mongodb with your desired name for the field `MONGO_DATABASE`.
+   Replace `your_secret_key`, `your_db_username`, and `your_db_password` with your actual credentials. If you want to use MongoDB Atlas, set `TEST_MODE=atlas` and provide the `MONGO_ATLAS_CONNECTION_STRING`.
 
-2. **Database Setup**
 
-   Ensure that MongoDB is installed and running on your machine. The application will connect to the MongoDB instance using the credentials provided in the `.env` file.
+## Database Setup
+
+The application supports connecting to MongoDB in three different modes: locally, within a Docker container, or using MongoDB Atlas. You can configure the mode by setting the `DB_MODE` environment variable in your `.env` file.
+
+1. **Local MongoDB**
+
+   To use a local MongoDB instance, set `DB_MODE=local` in your `.env` file. Ensure MongoDB is installed and running on your machine. The application will connect using the following environment variables:
+
+   ```env
+   DB_MODE=local
+   MONGO_DATABASE=my_net_worth_db
+   MONGO_LOCAL_HOST=mongodb://localhost:27017
+   ```
+
+2. **MongoDB in Docker Container**
+
+   If you prefer to use MongoDB within a Docker container, set `DB_MODE=container`. This mode is typically used when deploying the application with Docker Compose. The connection will use the following environment variables:
+
+   ```env
+   DB_MODE=container
+   MONGO_DATABASE=my_net_worth_db
+   MONGO_HOST=mongodb
+   ```
+
+   You can optionally add `MONGO_ROOT_USERNAME` and `MONGO_ROOT_PASSWORD` if authentication is required, but ensure the user is created in MongoDB.
+
+3. **MongoDB Atlas**
+
+   To connect to MongoDB Atlas, set `DB_MODE=atlas` and provide your MongoDB Atlas connection string. Ensure your MongoDB Atlas cluster is configured to allow connections from your network. Use the following environment variables:
+
+   ```env
+   DB_MODE=atlas
+   MONGO_ATLAS_CONNECTION_STRING=your_mongo_atlas_connection_string
+   ```
+
+   Replace `your_mongo_atlas_connection_string` with the actual connection string provided by MongoDB Atlas.
+
+By configuring the `DB_MODE` and the corresponding environment variables, you can easily switch between different MongoDB setups based on your deployment needs.
+
 
 ## Running the Application
 

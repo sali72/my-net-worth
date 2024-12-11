@@ -53,9 +53,10 @@ The application follows a modular architecture using **FastAPI** for building th
 - **Pydantic**: Data validation and settings management.
 - **PyJWT**: Handling JSON Web Tokens for authentication.
 - **Passlib**: Secure password hashing.
+- **zxcvbn** : Checks password strength.
 - **Blinker**: Signal support for MongoEngine.
 - **Uvicorn**: ASGI server for running the application.
-- **Dotenv**: Manage environment variables.
+- **python-dotenv**: Manage environment variables.
 
 ## Project Structure
 

@@ -1,34 +1,28 @@
-# My Net Worth App API - Guide
+# My Net Worth App API - Step By Step Guide
 
 This part of document provides an example usage of each API and explains the intended usage of them.
 
-## Table of Contents
+Pay more attention to 🔴, ⚠️ and ☝️ emoji signs as they provide important usage guides about application. some API's can not be used until you have some info provided from another API.
 
-- [Authentication](#authentication)
-- [Currency Exchanges](#currency-exchanges)
-- [Wallet](#wallet)
-- [Balances](#balances)
-- [Currencies](#currencies)
-- [Transactions](#transactions)
-- [Category](#category)
-- [Asset Type](#asset-type)
-- [Asset](#asset)
-- [User App Data](#user-app-data)
+
+
+<details>
+<summary>Toggle Authentication Details</summary>
 
 ## Authentication
 
-- 🔴 First  get all the predefined currencies available, then choose one.
-    
-    example curl request: 
-    
+- 🔴 First get all the predefined currencies available, then choose one.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/currencies/predefined' \
       -H 'accept: application/json'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Predefined currencies retrieved successfully",
@@ -59,13 +53,11 @@ This part of document provides an example usage of each API and explains the int
       "timestamp": "2024-11-24T17:03:14.290672"
     }
     ```
-    
-- Then create an account using your desired base currency and your personal info
-In this example I want to use dollar as my base currency, I used the id we got from previous request 
-From now on to use the app, for every request you need to provide the access_token you got here as a header named Authentication
-    
-    example curl request: 
-    
+
+- Then create an account using your desired base currency and your personal info. In this example, I want to use the dollar as my base currency. I used the id we got from the previous request. From now on, to use the app, for every request you need to provide the `access_token` you got here as a header named `Authentication`.
+
+    example curl request:
+
     ```bash
     curl -X 'POST' \
       'http://127.0.0.1:8000/register' \
@@ -78,9 +70,9 @@ From now on to use the app, for every request you need to provide the access_tok
       "base_currency_id": "6745dbed6b99c20aab2de4e0"
     }'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "User registered successfully",
@@ -91,11 +83,11 @@ From now on to use the app, for every request you need to provide the access_tok
       "timestamp": "2024-12-03T11:03:20.141111"
     }
     ```
-    
-- 🔴 After registration if you want to get your access token you can login using your credentials
-    
-    example curl request: 
-    
+
+- 🔴 After registration, if you want to get your access token, you can log in using your credentials.
+
+    example curl request:
+
     ```bash
     curl -X 'POST' \
       'http://127.0.0.1:8000/login' \
@@ -103,29 +95,29 @@ From now on to use the app, for every request you need to provide the access_tok
       -H 'Content-Type: application/x-www-form-urlencoded' \
       -d 'grant_type=password&username=johndoe&password=UncommonPass%3F123&scope=&client_id=string&client_secret=string'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMzMjE2NDgwfQ.UYTDS0bOybXjs2VMujeqeNZBwSaw5N5Rr28_FS79_Ps",
       "token_type": "bearer"
     }
     ```
-    
-- You also can get your info
-    
-    example curl request: 
-    
+
+- You also can get your info.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/user' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMzMjE2Mjc4fQ.VByWTQqSHHEiYHFh6fH4OLIPMHrBg_IGKfv8IzCeByQ'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "User data retrieved successfully",
@@ -141,11 +133,11 @@ From now on to use the app, for every request you need to provide the access_tok
       "timestamp": "2024-12-03T11:03:20.141111"
     }
     ```
-    
-- Modify your info
-    
-    example curl request: 
-    
+
+- Modify your info.
+
+    example curl request:
+
     ```bash
     curl -X 'PUT' \
       'http://127.0.0.1:8000/update' \
@@ -159,9 +151,9 @@ From now on to use the app, for every request you need to provide the access_tok
       "password": "newstrongpassword123"
     }'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "User credentials updated successfully",
@@ -177,21 +169,20 @@ From now on to use the app, for every request you need to provide the access_tok
       "timestamp": "2024-12-03T11:03:20.141111"
     }
     ```
-    
-- Or delete your account
-But beware that if you delete your account all of your data will be lost too
-    
-    example curl request: 
-    
+
+- Or delete your account. But beware that if you delete your account, all of your data will be lost too.
+
+    example curl request:
+
     ```bash
     curl -X 'DELETE' \
       'http://127.0.0.1:8000/user' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMzMjE1OTk1fQ.6xTi3durHRHfIGNbW0Y6sEcI2wJ_VgSh4rdO8kQljzg'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "User deleted successfully",
@@ -199,15 +190,19 @@ But beware that if you delete your account all of your data will be lost too
       "timestamp": "2024-12-03T11:03:20.141111"
     }
     ```
-    
+
+</details>
+
+
+<details>
+<summary>Toggle Currency Exchanges Details</summary>
 
 ## Currency Exchanges
 
-- ⚠️ If you want to have any currency in your wallets other than your base currency you have to make sure an exchange rate for them exists in the database
-This is crucial to the apps functionalities because it wants to calculate value of each currency to your base currency and give you an estimation of your wallets and assets value
-    
-    example curl request: 
-    
+- ⚠️ If you want to have any currency in your wallets other than your base currency, you have to make sure an exchange rate for them exists in the database. This is crucial to the app's functionalities because it wants to calculate the value of each currency to your base currency and give you an estimation of your wallets and assets value.
+
+    example curl request:
+
     ```bash
     curl -X 'POST' \
       'http://127.0.0.1:8000/currency-exchanges' \
@@ -221,9 +216,9 @@ This is crucial to the apps functionalities because it wants to calculate value 
       "date": "2023-10-15T14:30:00Z"
     }'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
     "message":"Currency exchange created successfully",
@@ -240,23 +235,20 @@ This is crucial to the apps functionalities because it wants to calculate value 
     "timestamp":"2024-11-24T19:40:29.240770"
     }
     ```
-    
-    ---
-    
-- You can do other CRUD operations on currency exchanges
-lets try getting all
-    
-    example curl request: 
-    
+
+- You can do other CRUD operations on currency exchanges. Let's try getting all.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/currency-exchanges' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMyNTE4MjE3fQ.TY29rBpfyuuWd4K7a3wszmlINvZMF2OjSqUXhySJM2M'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Currency exchanges retrieved successfully",
@@ -275,20 +267,20 @@ lets try getting all
       "timestamp": "2024-11-25T10:03:06.482411"
     }
     ```
-    
-- Read an exchange
-    
-    example curl request: 
-    
+
+- Read an exchange.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/currency-exchanges/674350650627757e5b6ab189' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMyNTE4MjE3fQ.TY29rBpfyuuWd4K7a3wszmlINvZMF2OjSqUXhySJM2M'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Currency exchange retrieved successfully",
@@ -305,11 +297,11 @@ lets try getting all
       "timestamp": "2024-11-25T10:03:06.482411"
     }
     ```
-    
-- Update an exchange
-    
-    example curl request: 
-    
+
+- Update an exchange.
+
+    example curl request:
+
     ```bash
     curl -X 'PUT' \
       'http://127.0.0.1:8000/currency-exchanges/674350650627757e5b6ab189' \
@@ -320,9 +312,9 @@ lets try getting all
       "rate": 0.822
     }'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Currency exchange updated successfully",
@@ -339,20 +331,20 @@ lets try getting all
       "timestamp": "2024-11-25T10:03:06.482411"
     }
     ```
-    
-- Delete one exchange if you need to
-    
-    example curl request: 
-    
+
+- Delete one exchange if you need to.
+
+    example curl request:
+
     ```bash
     curl -X 'DELETE' \
       'http://127.0.0.1:8000/currency-exchanges/67441be179a9ae30778b0df0' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMyNTE4MjE3fQ.TY29rBpfyuuWd4K7a3wszmlINvZMF2OjSqUXhySJM2M'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
     "message":"Currency exchange deleted successfully",
@@ -360,26 +352,29 @@ lets try getting all
     "timestamp":"2024-11-25T10:03:06.482411"
     }
     ```
-    
+
+</details>
+
+
+<details>
+<summary>Toggle Wallets Details</summary>
 
 ## Wallets
 
-- First things first ,to create a wallet for your self you need to know the ids of currencies in your wallet.
-so now lets get all the currencies, user defined or predefined
-    
-    example curl request: 
-    
+- First things first, to create a wallet for yourself, you need to know the ids of currencies in your wallet. So now let's get all the currencies, user-defined or predefined.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/currencies' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMyNDYxMDYwfQ.C25hYQ8l5ZxWUC0AOfZa5vY4vXZVCS9x5SxQyNZHBdM'
     ```
-    
+
     example response body:
-    
+
     ```json
-    
     {
       "message": "Currencies retrieved successfully",
       "data": {
@@ -409,16 +404,11 @@ so now lets get all the currencies, user defined or predefined
       "timestamp": "2024-11-24T17:03:14.290672"
     }
     ```
-    
-- **☝️**Now if you have the needed currency exchange rates you can create a wallet with your desired currencies
-use the ids of currencies you want in your wallet in the balances_ids section of the request
-each wallet can have many balances holding different currencies, provide an initial amount for each.
-you should also provide a name and type of wallet.
-type of wallet can either be “fiat” or “crypto”.
-you can create as many wallets as you want
-    
-    example curl request: 
-    
+
+- **☝️** Now if you have the needed currency exchange rates, you can create a wallet with your desired currencies. Use the ids of currencies you want in your wallet in the `balances_ids` section of the request. Each wallet can have many balances holding different currencies, provide an initial amount for each. You should also provide a name and type of wallet. The type of wallet can either be “fiat” or “crypto”. You can create as many wallets as you want.
+
+    example curl request:
+
     ```bash
     curl -X 'POST' \
       'http://127.0.0.1:8000/wallets' \
@@ -440,9 +430,9 @@ you can create as many wallets as you want
       ]
     }'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Wallet created successfully",
@@ -474,21 +464,20 @@ you can create as many wallets as you want
       "timestamp": "2024-12-03T11:03:20.141111"
     }
     ```
-    
-- You can now operate typical CRUD operations on wallet models
-lets get all wallets a user created
-    
-    example curl request: 
-    
+
+- You can now operate typical CRUD operations on wallet models. Let's get all wallets a user created.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/wallets' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuZXd1c2VybmFtZSIsImV4cCI6MTczMzIxNjgyMX0.UqtH9QiSStRFehA7FUHZ5AjLlBCPYh2KNTpzzKhTp98'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Wallets retrieved successfully",
@@ -539,20 +528,20 @@ lets get all wallets a user created
       "timestamp": "2024-12-03T11:03:20.141111"
     }
     ```
-    
-- Get a wallet by it’s id
-    
-    example curl request: 
-    
+
+- Get a wallet by its id.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/wallets/674eca33b42bef228d9ac141' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuZXd1c2VybmFtZSIsImV4cCI6MTczMzIxODY0M30.e-kYTmiWO1Ejn7feO0A-J2dlhA-bU1aFkrU6oDaDh6I'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Wallet retrieved successfully",
@@ -578,11 +567,11 @@ lets get all wallets a user created
       "timestamp": "2024-12-03T11:03:20.141111"
     }
     ```
-    
-- Update a wallet
-    
-    example curl request: 
-    
+
+- Update a wallet.
+
+    example curl request:
+
     ```bash
     curl -X 'PUT' \
       'http://127.0.0.1:8000/wallets/674eca33b42bef228d9ac141' \
@@ -599,9 +588,9 @@ lets get all wallets a user created
       ]
     }'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Wallet updated successfully",
@@ -627,20 +616,20 @@ lets get all wallets a user created
       "timestamp": "2024-12-03T11:03:20.141111"
     }
     ```
-    
-- Delete a wallet
-    
-    example curl request: 
-    
+
+- Delete a wallet.
+
+    example curl request:
+
     ```bash
     curl -X 'DELETE' \
       'http://127.0.0.1:8000/wallets/67433e42fce3476d0b8c5de2' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMyNTIxMTA3fQ.0Rw1sLpMbkwKXpgA55UxI__xQb6-DoenGUPcrtOIKkI'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Wallet deleted successfully",
@@ -648,21 +637,20 @@ lets get all wallets a user created
       "timestamp": "2024-11-25T10:55:57.506591"
     }
     ```
-    
-- There is a route to get total value of all your wallets
-What this route does is to fetch all of your wallets and sum their balances, It does not rely on total-value field in the wallet model, so it can be used to fix any possible inconsistencies
-    
-    example curl request: 
-    
+
+- There is a route to get the total value of all your wallets. What this route does is to fetch all of your wallets and sum their balances. It does not rely on the `total-value` field in the wallet model, so it can be used to fix any possible inconsistencies.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/wallets/total-value' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuZXd1c2VybmFtZSIsImV4cCI6MTczMzIxODY0M30.e-kYTmiWO1Ejn7feO0A-J2dlhA-bU1aFkrU6oDaDh6I'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Total wallet value calculated successfully",
@@ -672,16 +660,19 @@ What this route does is to fetch all of your wallets and sum their balances, It 
       "timestamp": "2024-12-03T11:03:20.141111"
     }
     ```
-    
-    ---
-    
+
+</details>
+
+
+<details>
+<summary>Toggle Balances Details</summary>
 
 ## Balances
 
-- You can also add new currencies to your wallet, lets say you have some JPY and you want it to be in a specific wallet. use JPY’s id and the amount you have to add it to your wallet.
-    
-    example curl request: 
-    
+- You can also add new currencies to your wallet. Let's say you have some JPY and you want it to be in a specific wallet. Use JPY’s id and the amount you have to add it to your wallet.
+
+    example curl request:
+
     ```bash
     curl -X 'POST' \
       'http://127.0.0.1:8000/wallets/674ec683b42bef228d9ac13d/balance' \
@@ -693,9 +684,9 @@ What this route does is to fetch all of your wallets and sum their balances, It 
       "amount": 20000
     }'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Currency balance added successfully",
@@ -733,21 +724,20 @@ What this route does is to fetch all of your wallets and sum their balances, It 
       "timestamp": "2024-12-03T12:46:00.102914"
     }
     ```
-    
-- You can of course remove any unwanted balances too
-providing wallet and currency ids
-    
-    example curl request: 
-    
+
+- You can, of course, remove any unwanted balances too, providing wallet and currency ids.
+
+    example curl request:
+
     ```bash
     curl -X 'DELETE' \
       'http://127.0.0.1:8000/wallets/674ec683b42bef228d9ac13d/balance/6745dbed6b99c20aab2de4e2' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuZXd1c2VybmFtZSIsImV4cCI6MTczMzIxOTM2M30.ovAKzXI-w2lEfObbTThbF7H_sdUTBNKKH3LCjWJcdn0'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Currency balance removed successfully",
@@ -779,19 +769,19 @@ providing wallet and currency ids
       "timestamp": "2024-12-03T12:46:00.102914"
     }
     ```
-    
-    ---
-    
+
+</details>
+
+
+<details>
+<summary>Toggle Currencies Details</summary>
 
 ## Currencies
 
-- We can also add our own custom currencies and modify them
-for example here we see there is no Tether in predefined currencies so we can add it manually
-currency type can either be “fiat” or “crypto”
-⚠️ also remember that whenever you introduce a new currency, add an exchange rate to the base currency instantly after that so you won’t face any problems later.
-    
-    example curl request: 
-    
+- We can also add our own custom currencies and modify them. For example, here we see there is no Tether in predefined currencies, so we can add it manually. The currency type can either be “fiat” or “crypto”. ⚠️ Also remember that whenever you introduce a new currency, add an exchange rate to the base currency instantly after that so you won’t face any problems later.
+
+    example curl request:
+
     ```bash
     curl -X 'POST' \
       'http://127.0.0.1:8000/currencies' \
@@ -805,9 +795,9 @@ currency type can either be “fiat” or “crypto”
       "currency_type": "crypto"
     }'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Currency created successfully",
@@ -827,21 +817,20 @@ currency type can either be “fiat” or “crypto”
       "timestamp": "2024-11-25T12:19:07.545506"
     }
     ```
-    
-- You can see all currencies, custom or predefined all together
-    
-    
-    example curl request: 
-    
+
+- You can see all currencies, custom or predefined, all together.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/currencies' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMyNTI2MjQxfQ.o1M5_oGcvqzTYXYrLdxB0O_pDpgXH2joB1FREH4nHlM'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
     "message":"Currencies retrieved successfully",
@@ -883,22 +872,20 @@ currency type can either be “fiat” or “crypto”
     "timestamp":"2024-11-25T12:19:07.545506"
     }
     ```
-    
-    ---
-    
-- You can get one currency by id
-    
-    example curl request: 
-    
+
+- You can get one currency by id.
+
+    example curl request:
+
     ```bash
     curl -X 'GET' \
       'http://127.0.0.1:8000/currencies/67443a0d0edbf08cff819104' \
       -H 'accept: application/json' \
       -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzMyNTI2MjQxfQ.o1M5_oGcvqzTYXYrLdxB0O_pDpgXH2joB1FREH4nHlM'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Currency retrieved successfully",
@@ -918,11 +905,11 @@ currency type can either be “fiat” or “crypto”
       "timestamp": "2024-11-25T12:19:07.545506"
     }
     ```
-    
-- Update a currency if you will
-    
-    example curl request: 
-    
+
+- Update a currency if you will.
+
+    example curl request:
+
     ```bash
     curl -X 'PUT' \
       'http://127.0.0.1:8000/currencies/67443a0d0edbf08cff819104' \
@@ -935,9 +922,9 @@ currency type can either be “fiat” or “crypto”
       "symbol": "MT"
     }'
     ```
-    
+
     example response body:
-    
+
     ```json
     {
       "message": "Currency updated successfully",
@@ -957,7 +944,7 @@ currency type can either be “fiat” or “crypto”
       "timestamp": "2024-11-25T12:19:07.545506"
     }
     ```
-    
+
 - Delete a currency if you want
     
     example curl request: 
@@ -978,7 +965,10 @@ currency type can either be “fiat” or “crypto”
       "timestamp": "2024-11-25T12:19:07.545506"
     }
     ```
-    
+</details>
+
+<details>
+<summary>Toggle Transactions Details</summary>
 
 ## Transactions
 
@@ -1328,7 +1318,10 @@ you can only update category, amount, date and description.
       "timestamp": "2024-11-25T16:18:22.168932"
     }
     ```
-    
+</details>
+
+<details>
+<summary>Toggle Category Details</summary>
 
 ## Category
 
@@ -1507,6 +1500,10 @@ choose the type of transaction this category can apply to
     }
     ```
     
+</details>
+
+<details>
+<summary>Toggle Asset Type Details</summary>
 
 ## Asset Type
 
@@ -1670,7 +1667,11 @@ choose the type of transaction this category can apply to
       "timestamp": "2024-11-25T19:56:10.083441"
     }
     ```
-    
+
+</details>
+
+<details>
+<summary>Toggle Asset Details</summary>
 
 ## Asset
 
@@ -1905,7 +1906,11 @@ you can search in your assets here
       "timestamp": "2024-11-25T20:02:13.181693"
     }
     ```
-    
+
+</details>
+
+<details>
+<summary>Toggle User App Data Details</summary>
 
 ## User App Data
 
@@ -1994,3 +1999,14 @@ it processes all of your data at the time of request to calculate the values
       "timestamp": "2024-11-25T21:29:00.265961"
     }
     ```
+</details>
+
+
+## Navigation Panel
+
+Use the links below to navigate between different sections of the documentation:
+
+- [Main README](README.md)
+- [Step by Step Guide](README-GUIDE.md)
+- [Developer Documentation](README-DEV.md)
+- [Models Documentation](README-MODELS.md)

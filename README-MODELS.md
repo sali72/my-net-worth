@@ -285,10 +285,12 @@ Represents a user's asset.
 
 ---
 
+
 ## Navigation Panel
 
 Use the links below to navigate between different sections of the documentation:
 
 - [Main README](README.md)
+- [Step by Step Guide](README-GUIDE.md)
 - [Developer Documentation](README-DEV.md)
 - [Models Documentation](README-MODELS.md)

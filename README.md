@@ -274,5 +274,6 @@ For questions or feedback, please reach out:
 For more technical details look at other readme files:
 
 - [Main README](README.md)
+- [Step by Step Guide](README-GUIDE.md)
 - [Developer Documentation](README-DEV.md)
 - [Models Documentation](README-MODELS.md)

@@ -10,3 +10,6 @@ python-multipart
 zxcvbn
 blinker
 uvicorn
+pytest
+pytest-mock
+pytest-asyncio

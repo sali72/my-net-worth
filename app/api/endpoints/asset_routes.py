@@ -44,7 +44,7 @@ async def create_asset_route(
     )
 
     message = "Asset created successfully"
-    data = {"data": asset.to_dict()}
+    data = {"model": asset.to_dict()}
     return ResponseSchema(data=data, message=message)
 
 

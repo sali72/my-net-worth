@@ -7,6 +7,8 @@ def check_value_precision(value: Decimal, field_name: str) -> Decimal:
     value = Decimal(str(value))
     if value == 0:
         raise ValueError(f"{field_name} cannot be zero")
+    if value < 0:
+        raise ValueError(f"{field_name} cannot be negative")
     if value.as_tuple().exponent < -MAX_DECIMAL_PART:
         raise ValueError(
             f"{field_name} cannot have more than {MAX_DECIMAL_PART} decimal places"

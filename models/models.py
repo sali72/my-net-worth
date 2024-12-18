@@ -17,7 +17,7 @@ from mongoengine import (
     ReferenceField,
     StringField,
     ValidationError,
-    signals
+    signals,
 )
 
 from models.enums import TransactionTypeEnum as T
@@ -287,3 +287,5 @@ class Asset(BaseDocument, TimestampMixin):
         super().clean()
         if len(self.name) < 3:
             raise ValidationError("Name must be at least 3 characters long.")
+
+    meta = {"indexes": [{"fields": ("user_id", "name"), "unique": True}]}

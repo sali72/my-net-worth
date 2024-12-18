@@ -50,7 +50,7 @@ class BalanceSchema(BaseModel):
     currency_id: str = Field(..., example="currency_id_123")
     amount: Decimal = Field(..., example=Decimal("100.50"))
 
-    @field_validator("amount", mode="before")
+    @field_validator("amount")
     def validate_balance(cls, v):
         return check_value_precision(v, "amount")
 
@@ -116,7 +116,7 @@ class CurrencyExchangeCreateSchema(BaseModel):
         default_factory=datetime.utcnow, example="2023-10-15T14:30:00Z"
     )
 
-    @field_validator(CurrencyExchange.rate.name, mode="before")
+    @field_validator(CurrencyExchange.rate.name)
     def validate_rate(cls, value):
         return check_value_precision(value, "Rate")
 
@@ -133,7 +133,7 @@ class CurrencyExchangeUpdateSchema(BaseModel):
     rate: Optional[Decimal] = Field(None, example="0.85")
     date: Optional[datetime] = Field(None, example="2023-10-15T14:30:00Z")
 
-    @field_validator(CurrencyExchange.rate.name, mode="before")
+    @field_validator(CurrencyExchange.rate.name)
     def validate_rate(cls, value):
         if value is not None:
             return check_value_precision(value, "Rate")
@@ -148,7 +148,7 @@ class TransactionBaseSchema(BaseModel):
         None, max_length=255, example="Transfer to savings"
     )
 
-    @field_validator("amount", mode="before")
+    @field_validator("amount")
     def validate_amount(cls, v):
         if v is not None:
             return check_value_precision(v, "Amount")
@@ -266,7 +266,7 @@ class AssetCreateSchema(BaseModel):
     )
     value: Decimal = Field(..., example=Decimal("350000.00"))
 
-    @field_validator("value", mode="before")
+    @field_validator("value")
     def validate_value(cls, v):
         return check_value_precision(v, "Value")
 
@@ -284,7 +284,7 @@ class AssetUpdateSchema(BaseModel):
     )
     value: Optional[Decimal] = Field(None, example="350000.00")
 
-    @field_validator("value", mode="before")
+    @field_validator("value")
     def validate_value(cls, v):
         if v is not None:
             return check_value_precision(v, "Value")

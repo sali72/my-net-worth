@@ -192,7 +192,8 @@ async def delete_transaction_route(
         transaction_id, user.id
     )
 
-    await UserAppDataController.reduce_value_from_user_app_data_wallets_value(
-        user, transaction.amount, transaction.currency_id.id
+    transaction.amount = -transaction.amount
+    await UserAppDataController.handle_transaction_user_app_data_wallet_value_update(
+        transaction, user
     )
     return ResponseSchema(message="Transaction deleted successfully")

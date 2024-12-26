@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Optional
-
+import asyncio
 import pytest
 
 from app.api.controllers.category_controller import CategoryController
@@ -44,7 +44,7 @@ async def cleanup_user_app_data(db, test_user):
 
 @pytest.mark.asyncio
 class TestTransactionRoutesSetup:
-    async def _create_test_transaction(
+    async def _create_test_transaction_and_wallet(
         self, test_user: User, **overrides
     ) -> Transaction:
         """Helper method to create a test transaction with optional overrides.
@@ -159,6 +159,76 @@ class TestTransactionRoutesSetup:
         assert "data" in response_data
         assert "message" in response_data
 
+    async def _verify_transaction_impacts_on_wallet(
+        self,
+        test_user: User,
+        wallet_id: str,
+        transaction_currency_id: str,
+        initial_wallet_total: Decimal,
+        initial_wallet_balance: Decimal,
+        expected_change: Decimal,
+    ) -> None:
+        """Verify transaction impacts on wallet and it's balance."""
+        # Get updated wallet state
+        wallet = await WalletCRUD.get_one_by_user(wallet_id, test_user.id)
+        wallet_dict = wallet.to_dict()
+
+        # Get updated values
+        updated_wallet_total = self._get_wallet_total_value(wallet_dict)
+        updated_wallet_balance = self._get_balance_amount(
+            wallet_dict, transaction_currency_id
+        )
+
+        # Verify wallet updates
+        await self._verify_wallet_updates(
+            initial_wallet_total,
+            initial_wallet_balance,
+            updated_wallet_total,
+            updated_wallet_balance,
+            expected_change,
+        )
+
+    async def _verify_transaction_impacts_on_user_app_data(
+        self,
+        test_user_id: str,
+        base_app_data_wallets_value: Decimal,
+        base_app_data_net_worth: Decimal,
+        expected_change: Decimal,
+    ) -> None:
+        """Verify user app data updates after transaction modification."""
+        updated_state = await self._get_user_app_data_state(test_user_id)
+        assert (
+            updated_state.wallets_value == base_app_data_wallets_value + expected_change
+        )
+        assert updated_state.net_worth == base_app_data_net_worth + expected_change
+
+    def _get_wallet_total_value(self, wallet: dict) -> Decimal:
+        """Get wallet's total value."""
+        return Decimal(str(wallet["total_value"]))
+
+    def _get_balance_amount(self, wallet: dict, currency_id: str) -> Optional[Decimal]:
+        """Get specific balance amount for given currency."""
+        for balance in wallet["balances_ids"]:
+            if str(balance["currency_id"]) == str(currency_id):
+                return Decimal(str(balance["amount"]))
+        return None
+
+    async def _verify_wallet_updates(
+        self,
+        initial_total: Decimal,
+        initial_balance: Decimal,
+        updated_total: Decimal,
+        updated_balance: Decimal,
+        expected_change: Decimal,
+    ) -> None:
+        """Verify wallet and balance amounts are updated correctly."""
+        assert updated_total == initial_total + expected_change
+        assert updated_balance == initial_balance + expected_change
+
+    async def _get_user_app_data_state(self, test_user_id: str) -> UserAppData:
+        """Get current user app data state."""
+        return await UserAppDataCRUD.get_one_by_user_id(test_user_id)
+
 
 @pytest.mark.asyncio
 class TestCreateTransactionRoutePositive(TestTransactionRoutesSetup):
@@ -180,6 +250,21 @@ class TestCreateTransactionRoutePositive(TestTransactionRoutesSetup):
         assert "result" in response_data["data"]
         assert response_data["message"] == "Transaction created successfully"
 
+        await self._verify_transaction_impacts_on_wallet(
+            test_user=test_user,
+            wallet_id=transaction_data["from_wallet_id"],
+            transaction_currency_id=transaction_data["currency_id"],
+            initial_wallet_total=Decimal(wallet["total_value"]),
+            initial_wallet_balance=Decimal(1000),
+            expected_change=-Decimal(transaction_data["amount"]),
+        )
+        await self._verify_transaction_impacts_on_user_app_data(
+            test_user_id=test_user.id,
+            base_app_data_wallets_value=Decimal(1000),
+            base_app_data_net_worth=Decimal(1000),
+            expected_change=-Decimal(transaction_data["amount"]),
+        )
+
     async def test_create_income_transaction(self, client, auth_headers, test_user):
         """Test creating an income transaction."""
         user_app_data = await UserAppDataCRUD.get_one_by_user_id(test_user.id)
@@ -198,6 +283,21 @@ class TestCreateTransactionRoutePositive(TestTransactionRoutesSetup):
         assert "result" in response_data["data"]
         assert response_data["message"] == "Transaction created successfully"
 
+        await self._verify_transaction_impacts_on_wallet(
+            test_user=test_user,
+            wallet_id=transaction_data["to_wallet_id"],
+            transaction_currency_id=transaction_data["currency_id"],
+            initial_wallet_total=Decimal(wallet["total_value"]),
+            initial_wallet_balance=Decimal(1000),
+            expected_change=Decimal(transaction_data["amount"]),
+        )
+        await self._verify_transaction_impacts_on_user_app_data(
+            test_user_id=test_user.id,
+            base_app_data_wallets_value=Decimal(1000),
+            base_app_data_net_worth=Decimal(1000),
+            expected_change=Decimal(transaction_data["amount"]),
+        )
+
     async def test_create_transfer_transaction(self, client, auth_headers, test_user):
         """Test creating a transfer transaction."""
         user_app_data = await UserAppDataCRUD.get_one_by_user_id(test_user.id)
@@ -211,7 +311,6 @@ class TestCreateTransactionRoutePositive(TestTransactionRoutesSetup):
             type=T.TRANSFER.value,
             to_wallet_id=str(to_wallet["_id"]),
         )
-
         response = client.post(
             "/transactions", json=transaction_data, headers=auth_headers
         )
@@ -221,6 +320,29 @@ class TestCreateTransactionRoutePositive(TestTransactionRoutesSetup):
         assert "result" in response_data["data"]
         assert response_data["message"] == "Transaction created successfully"
 
+        await self._verify_transaction_impacts_on_wallet(
+            test_user=test_user,
+            wallet_id=transaction_data["from_wallet_id"],
+            transaction_currency_id=transaction_data["currency_id"],
+            initial_wallet_total=Decimal(from_wallet["total_value"]),
+            initial_wallet_balance=Decimal(1000),
+            expected_change=-Decimal(transaction_data["amount"]),
+        )
+        await self._verify_transaction_impacts_on_wallet(
+            test_user=test_user,
+            wallet_id=transaction_data["to_wallet_id"],
+            transaction_currency_id=transaction_data["currency_id"],
+            initial_wallet_total=Decimal(to_wallet["total_value"]),
+            initial_wallet_balance=Decimal(1000),
+            expected_change=Decimal(transaction_data["amount"]),
+        )
+        await self._verify_transaction_impacts_on_user_app_data(
+            test_user_id=test_user.id,
+            base_app_data_wallets_value=Decimal(2000),
+            base_app_data_net_worth=Decimal(2000),
+            expected_change=Decimal(0),
+        )
+
 
 @pytest.mark.asyncio
 class TestReadTransactionRoutePositive(TestTransactionRoutesSetup):
@@ -228,7 +350,7 @@ class TestReadTransactionRoutePositive(TestTransactionRoutesSetup):
 
     async def test_read_transaction(self, client, auth_headers, test_user):
         """Test reading a specific transaction."""
-        transaction = await self._create_test_transaction(test_user)
+        transaction = await self._create_test_transaction_and_wallet(test_user)
 
         response = client.get(
             f"/transactions/{str(transaction.id)}", headers=auth_headers
@@ -247,8 +369,8 @@ class TestReadAllTransactionsRoutePositive(TestTransactionRoutesSetup):
     async def test_read_all_transactions(self, client, auth_headers, test_user):
         """Test reading all transactions."""
         transactions = [
-            await self._create_test_transaction(test_user),
-            await self._create_test_transaction(test_user),
+            await self._create_test_transaction_and_wallet(test_user),
+            await self._create_test_transaction_and_wallet(test_user),
         ]
 
         response = client.get("/transactions", headers=auth_headers)
@@ -266,7 +388,7 @@ class TestFilterTransactionsRoutePositive(TestTransactionRoutesSetup):
 
     async def test_filter_transactions_by_date(self, client, auth_headers, test_user):
         """Test filtering transactions by date range."""
-        transaction = await self._create_test_transaction(test_user)
+        transaction = await self._create_test_transaction_and_wallet(test_user)
         start_date = (transaction.date - timedelta(days=1)).isoformat()
         end_date = (transaction.date + timedelta(days=1)).isoformat()
 
@@ -290,7 +412,7 @@ class TestTransactionStatisticsRoutePositive(TestTransactionRoutesSetup):
 
     async def test_get_transaction_statistics(self, client, auth_headers, test_user):
         """Test getting transaction statistics."""
-        transaction = await self._create_test_transaction(test_user)
+        transaction = await self._create_test_transaction_and_wallet(test_user)
         start_date = (transaction.date - timedelta(days=1)).isoformat()
         end_date = (transaction.date + timedelta(days=1)).isoformat()
 
@@ -311,17 +433,6 @@ class TestTransactionStatisticsRoutePositive(TestTransactionRoutesSetup):
 @pytest.mark.asyncio
 class TestUpdateTransactionRoutePositive(TestTransactionRoutesSetup):
     """Happy path tests for updating transactions"""
-
-    def _get_wallet_total_value(self, wallet: dict) -> Decimal:
-        """Get wallet's total value."""
-        return Decimal(str(wallet["total_value"]))
-
-    def _get_balance_amount(self, wallet: dict, currency_id: str) -> Optional[Decimal]:
-        """Get specific balance amount for given currency."""
-        for balance in wallet["balances_ids"]:
-            if str(balance["currency_id"]) == str(currency_id):
-                return Decimal(str(balance["amount"]))
-        return None
 
     async def _update_transaction_amount(
         self, transaction_id: str, new_amount: str, auth_headers: dict
@@ -347,49 +458,23 @@ class TestUpdateTransactionRoutePositive(TestTransactionRoutesSetup):
             else amount_difference
         )
 
-    async def _verify_wallet_updates(
-        self,
-        initial_total: Decimal,
-        initial_balance: Decimal,
-        updated_total: Decimal,
-        updated_balance: Decimal,
-        expected_change: Decimal,
-    ) -> None:
-        """Verify wallet and balance amounts are updated correctly."""
-        assert updated_total == initial_total + expected_change
-        assert updated_balance == initial_balance + expected_change
-
-    async def _get_user_app_data_state(self, test_user_id: str) -> UserAppData:
-        """Get current user app data state."""
-        return await UserAppDataCRUD.get_one_by_user_id(test_user_id)
-
-    async def _verify_user_app_data_updates(
-        self, test_user_id: str, base_state: UserAppData, expected_change: Decimal
-    ) -> None:
-        """Verify user app data updates after transaction modification."""
-        updated_state = await self._get_user_app_data_state(test_user_id)
-        assert updated_state.wallets_value == base_state.wallets_value + expected_change
-        assert updated_state.net_worth == base_state.net_worth + expected_change
-
     async def test_update_transaction_amount(self, client, auth_headers, test_user):
         """Test updating transaction amount and verifying all related updates."""
-        # Create transaction and get initial values
-        transaction = await self._create_test_transaction(test_user)
+        # Create transaction
+        transaction = await self._create_test_transaction_and_wallet(test_user)
 
-        # Set states to later check for transaction impacts
-        initial_amount = transaction.amount
-        new_amount = Decimal("200.00")
+        # Get initial states after creation
+        initial_user_app_data_state = await self._get_user_app_data_state(test_user.id)
         wallet = await WalletCRUD.get_one_by_user(
             str(transaction.to_wallet_id.id), test_user.id
         )
-        wallet_dict = wallet.to_dict()
-        state_after_wallet = await self._get_user_app_data_state(test_user.id)
-        initial_wallet_total = self._get_wallet_total_value(wallet_dict)
+        initial_wallet_total = self._get_wallet_total_value(wallet.to_dict())
         initial_wallet_balance = self._get_balance_amount(
-            wallet_dict, transaction.currency_id.id
+            wallet.to_dict(), transaction.currency_id.id
         )
 
         # Update transaction
+        new_amount = Decimal("200.00")
         response = client.put(
             f"/transactions/{str(transaction.id)}",
             json={"amount": str(new_amount)},
@@ -403,58 +488,31 @@ class TestUpdateTransactionRoutePositive(TestTransactionRoutesSetup):
         assert response_data["message"] == "Transaction updated successfully"
         assert Decimal(response_data["data"]["transaction"]["amount"]) == new_amount
 
-        # Get updated wallet state
-        await self._verify_transaction_impacts(
-            test_user,
-            transaction,
-            initial_amount,
-            new_amount,
-            state_after_wallet,
-            initial_wallet_total,
-            initial_wallet_balance,
-        )
-
-    async def _verify_transaction_impacts(
-        self,
-        test_user,
-        transaction,
-        initial_amount,
-        new_amount,
-        state_after_wallet,
-        initial_wallet_total,
-        initial_wallet_balance,
-    ):
-        wallet = await WalletCRUD.get_one_by_user(
-            str(transaction.to_wallet_id.id), test_user.id
-        )
-        wallet_dict = wallet.to_dict()
-        updated_wallet_total = self._get_wallet_total_value(wallet_dict)
-        updated_wallet_balance = self._get_balance_amount(
-            wallet_dict, transaction.currency_id.id
-        )
-
-        # Verify all updates
+        # Calculate expected change
         expected_change = self._calculate_balance_change(
-            initial_amount, new_amount, transaction.type
+            transaction.amount, new_amount, transaction.type
         )
 
-        await self._verify_wallet_updates(
-            initial_wallet_total,
-            initial_wallet_balance,
-            updated_wallet_total,
-            updated_wallet_balance,
-            expected_change,
+        await self._verify_transaction_impacts_on_wallet(
+            test_user=test_user,
+            wallet_id=str(transaction.to_wallet_id.id),
+            transaction_currency_id=str(transaction.currency_id.id),
+            initial_wallet_total=initial_wallet_total,
+            initial_wallet_balance=initial_wallet_balance,
+            expected_change=expected_change,
         )
-
-        await self._verify_user_app_data_updates(
-            test_user.id, state_after_wallet, expected_change
+        await self._verify_transaction_impacts_on_user_app_data(
+            test_user_id=test_user.id,
+            base_app_data_wallets_value=initial_user_app_data_state.wallets_value,
+            base_app_data_net_worth=initial_user_app_data_state.net_worth,
+            expected_change=expected_change,
         )
 
     async def test_update_transaction_description(
         self, client, auth_headers, test_user
     ):
         """Test updating transaction description."""
-        transaction = await self._create_test_transaction(test_user)
+        transaction = await self._create_test_transaction_and_wallet(test_user)
         update_data = {"description": "Updated description"}
 
         response = client.put(
@@ -471,7 +529,7 @@ class TestUpdateTransactionRoutePositive(TestTransactionRoutesSetup):
 
     async def test_update_transaction_date(self, client, auth_headers, test_user):
         """Test updating transaction date."""
-        transaction = await self._create_test_transaction(test_user)
+        transaction = await self._create_test_transaction_and_wallet(test_user)
         new_date = datetime.utcnow() + timedelta(days=1)
         update_data = {"date": new_date.isoformat()}
 
@@ -487,7 +545,7 @@ class TestUpdateTransactionRoutePositive(TestTransactionRoutesSetup):
 
     async def test_update_transaction_category(self, client, auth_headers, test_user):
         """Test updating transaction category."""
-        transaction = await self._create_test_transaction(test_user)
+        transaction = await self._create_test_transaction_and_wallet(test_user)
         new_category = await self._create_test_category(test_user)
         update_data = {"category_id": str(new_category["_id"])}
 
@@ -507,7 +565,7 @@ class TestUpdateTransactionRoutePositive(TestTransactionRoutesSetup):
         self, client, auth_headers, test_user
     ):
         """Test updating multiple transaction fields."""
-        transaction = await self._create_test_transaction(test_user)
+        transaction = await self._create_test_transaction_and_wallet(test_user)
         update_data = {
             "amount": "300.00",
             "description": "Updated description",
@@ -525,3 +583,139 @@ class TestUpdateTransactionRoutePositive(TestTransactionRoutesSetup):
         transaction_data = response_data["data"]["transaction"]
         assert Decimal(transaction_data["amount"]) == Decimal("300.00")
         assert transaction_data["description"] == "Updated description"
+
+        wallet = Wallet.objects.first()
+        await self._verify_transaction_impacts_on_wallet(
+            test_user=test_user,
+            wallet_id=wallet.id,
+            transaction_currency_id=transaction_data["currency_id"],
+            initial_wallet_total=Decimal(1000),
+            initial_wallet_balance=Decimal(1000),
+            expected_change=Decimal(transaction_data["amount"]),
+        )
+        await self._verify_transaction_impacts_on_user_app_data(
+            test_user_id=test_user.id,
+            base_app_data_wallets_value=Decimal(1000),
+            base_app_data_net_worth=Decimal(1000),
+            expected_change=Decimal(transaction_data["amount"]),
+        )
+
+
+@pytest.mark.asyncio
+class TestDeleteTransactionRoutePositive(TestTransactionRoutesSetup):
+    """Happy path tests for deleting transactions"""
+
+    async def test_delete_transaction(self, client, auth_headers, test_user):
+        """Test deleting a transaction and verifying all related updates."""
+        # Create transaction
+        transaction = await self._create_test_transaction_and_wallet(test_user)
+
+        # Get initial states before deletion
+        initial_user_app_data_state = await self._get_user_app_data_state(test_user.id)
+        wallet = await WalletCRUD.get_one_by_user(
+            str(transaction.to_wallet_id.id), test_user.id
+        )
+        initial_wallet_total = self._get_wallet_total_value(wallet.to_dict())
+        initial_wallet_balance = self._get_balance_amount(
+            wallet.to_dict(), transaction.currency_id.id
+        )
+
+        # Delete transaction
+        response = client.delete(
+            f"/transactions/{str(transaction.id)}", headers=auth_headers
+        )
+
+        # Verify response
+        await self._verify_response(response)
+        response_data = response.json()
+        assert response_data["message"] == "Transaction deleted successfully"
+
+        # Calculate expected change (reverse of the transaction amount)
+        expected_change = (
+            -transaction.amount
+            if transaction.type == T.INCOME.value
+            else transaction.amount
+        )
+
+        # Verify wallet and user app data updates
+        await self._verify_transaction_impacts_on_wallet(
+            test_user=test_user,
+            wallet_id=str(transaction.to_wallet_id.id),
+            transaction_currency_id=str(transaction.currency_id.id),
+            initial_wallet_total=initial_wallet_total,
+            initial_wallet_balance=initial_wallet_balance,
+            expected_change=expected_change,
+        )
+        await self._verify_transaction_impacts_on_user_app_data(
+            test_user_id=test_user.id,
+            base_app_data_wallets_value=initial_user_app_data_state.wallets_value,
+            base_app_data_net_worth=initial_user_app_data_state.net_worth,
+            expected_change=expected_change,
+        )
+
+    async def test_delete_transfer_transaction(self, client, auth_headers, test_user):
+        """Test deleting a transfer transaction."""
+        # Create transfer transaction
+        user_app_data = await UserAppDataCRUD.get_one_by_user_id(test_user.id)
+        from_wallet = await self._create_test_wallet(test_user, user_app_data)
+        to_wallet = await self._create_test_wallet(test_user, user_app_data)
+        category = await self._create_test_category(test_user)
+
+        transaction_data = self._get_test_transaction_data(
+            from_wallet,
+            category,
+            type=T.TRANSFER.value,
+            to_wallet_id=str(to_wallet["_id"]),
+        )
+
+        # Create transaction through API
+        response = client.post(
+            "/transactions", json=transaction_data, headers=auth_headers
+        )
+        created_transaction = response.json()["data"]["result"]
+        await asyncio.sleep(1.0) 
+        # Get initial states
+        initial_from_wallet = await WalletCRUD.get_one_by_user(
+            transaction_data["from_wallet_id"], test_user.id
+        )
+        initial_to_wallet = await WalletCRUD.get_one_by_user(
+            transaction_data["to_wallet_id"], test_user.id
+        )
+        # Delete transaction
+        response = client.delete(
+            f"/transactions/{created_transaction['_id']}", headers=auth_headers
+        )
+
+        # Verify response
+        await self._verify_response(response)
+        response_data = response.json()
+        assert response_data["message"] == "Transaction deleted successfully"
+
+        # Verify impacts on both wallets
+        await self._verify_transaction_impacts_on_wallet(
+            test_user=test_user,
+            wallet_id=transaction_data["from_wallet_id"],
+            transaction_currency_id=transaction_data["currency_id"],
+            initial_wallet_total=self._get_wallet_total_value(
+                initial_from_wallet.to_dict()
+            ),
+            initial_wallet_balance=Decimal("900.00"),
+            expected_change=Decimal(transaction_data["amount"]),
+        )
+        await self._verify_transaction_impacts_on_wallet(
+            test_user=test_user,
+            wallet_id=transaction_data["to_wallet_id"],
+            transaction_currency_id=transaction_data["currency_id"],
+            initial_wallet_total=self._get_wallet_total_value(
+                initial_to_wallet.to_dict()
+            ),
+            initial_wallet_balance=Decimal("1100.00"),
+            expected_change=-Decimal(transaction_data["amount"]),
+        )
+
+        await self._verify_transaction_impacts_on_user_app_data(
+            test_user_id=test_user.id,
+            base_app_data_wallets_value=Decimal("2000.00"),
+            base_app_data_net_worth=Decimal("2000.00"),
+            expected_change=Decimal(0),
+        )

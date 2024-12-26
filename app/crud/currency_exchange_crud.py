@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Optional
 
+from bson import ObjectId
 from mongoengine import DoesNotExist, QuerySet
 
 from models.models import CurrencyExchange
@@ -40,7 +41,7 @@ class CurrencyExchangeCRUD:
 
     @classmethod
     async def get_exchange_rate(
-        cls, user_id: str, from_currency_id: str, to_currency_id: str
+        cls, user_id: str, from_currency_id: ObjectId, to_currency_id: ObjectId
     ) -> Decimal:
         direct_rate = await cls._get_direct_exchange_rate(
             user_id, from_currency_id, to_currency_id
@@ -80,11 +81,14 @@ class CurrencyExchangeCRUD:
 
     @classmethod
     async def convert_value_to_base_currency(
-        cls, amount: Decimal, currency_id: str, base_currency_id: str, user_id: str
+        cls,
+        amount: Decimal,
+        currency_id: ObjectId,
+        base_currency_id: ObjectId,
+        user_id: str,
     ) -> Decimal:
         if currency_id == base_currency_id:
             return amount
-
         exchange_rate = await cls.get_exchange_rate(
             user_id, currency_id, base_currency_id
         )
@@ -92,7 +96,7 @@ class CurrencyExchangeCRUD:
 
     @classmethod
     async def get_direct_exchange_optional(
-        cls, user_id: str, from_currency_id: str, to_currency_id: str
+        cls, user_id: str, from_currency_id: ObjectId, to_currency_id: ObjectId
     ) -> Optional[CurrencyExchange]:
         return CurrencyExchange.objects(
             user_id=user_id,
@@ -102,7 +106,7 @@ class CurrencyExchangeCRUD:
 
     @classmethod
     async def _get_direct_exchange_rate(
-        cls, user_id: str, from_currency_id: str, to_currency_id: str
+        cls, user_id: str, from_currency_id: ObjectId, to_currency_id: ObjectId
     ) -> Optional[Decimal]:
         direct_exchange = await cls.get_direct_exchange_optional(
             user_id, from_currency_id, to_currency_id

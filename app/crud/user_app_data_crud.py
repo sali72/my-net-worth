@@ -21,7 +21,7 @@ class UserAppDataCRUD:
         return UserAppData.objects.get(user_id=user_id)
 
     @classmethod
-    async def get_base_currency_id_by_user_id(cls, user_id: str) -> str:
+    async def get_base_currency_id_by_user_id(cls, user_id: str) -> ObjectId:
         user_app_data = await cls.get_one_by_user_id(user_id)
         return user_app_data.base_currency_id.pk
 

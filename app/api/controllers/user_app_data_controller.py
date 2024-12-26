@@ -1,13 +1,15 @@
 from decimal import Decimal
-from typing import Dict
+from typing import Dict, Optional
 
+from bson import ObjectId
 from mongoengine import ValidationError
 
 from app.crud.currency_crud import CurrencyCRUD
 from app.crud.currency_exchange_crud import CurrencyExchangeCRUD
 from app.crud.user_app_data_crud import UserAppDataCRUD
 from app.crud.wallet_crud import WalletCRUD
-from models.models import Currency, User, UserAppData
+from models.models import Currency, Transaction, User, UserAppData
+from models.schemas import TransactionTypeEnum as T
 
 
 class UserAppDataController:
@@ -53,8 +55,30 @@ class UserAppDataController:
         return updated_data.to_dict()
 
     @classmethod
+    async def handle_transaction_user_app_data_wallet_value_update(
+        cls,
+        transaction: Transaction,
+        user: User,
+        amount: Optional[Decimal] = None,
+    ) -> None:
+
+        if transaction.type == T.TRANSFER.value:
+            return
+
+        transaction_amount = amount if amount is not None else transaction.amount
+
+        if transaction.type == T.EXPENSE.value:
+            await UserAppDataController.reduce_value_from_user_app_data_wallets_value(
+                user, transaction_amount, transaction.currency_id.id
+            )
+        elif transaction.type == T.INCOME.value:
+            await UserAppDataController.add_value_to_user_app_data_wallets_value(
+                user, transaction_amount, transaction.currency_id.id
+            )
+
+    @classmethod
     async def add_value_to_user_app_data_wallets_value(
-        cls, user: User, amount: Decimal, currency_id: str
+        cls, user: User, amount: Decimal, currency_id: ObjectId
     ) -> None:
         converted_amount = await cls._convert_to_base_currency(
             user.id, amount, currency_id
@@ -66,7 +90,7 @@ class UserAppDataController:
 
     @classmethod
     async def reduce_value_from_user_app_data_wallets_value(
-        cls, user: User, amount: Decimal, currency_id: str
+        cls, user: User, amount: Decimal, currency_id: ObjectId
     ) -> None:
         converted_amount = await cls._convert_to_base_currency(
             user.id, amount, currency_id
@@ -173,7 +197,7 @@ class UserAppDataController:
 
     @classmethod
     async def _convert_to_base_currency(
-        cls, user_id: str, amount: Decimal, currency_id: str
+        cls, user_id: str, amount: Decimal, currency_id: ObjectId
     ) -> Decimal:
         base_currency_id = await UserAppDataCRUD.get_base_currency_id_by_user_id(
             user_id

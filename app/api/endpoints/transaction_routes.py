@@ -41,8 +41,8 @@ async def create_transaction_route(
     transaction = await TransactionController.create_transaction(
         transaction_schema, user
     )
-    await UserAppDataController.add_value_to_user_app_data_wallets_value(
-        user, transaction.amount, transaction.currency_id.id
+    await UserAppDataController.handle_transaction_user_app_data_wallet_value_update(
+        transaction, user
     )
 
     message = "Transaction created successfully"

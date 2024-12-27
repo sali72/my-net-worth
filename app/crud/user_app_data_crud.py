@@ -38,7 +38,7 @@ class UserAppDataCRUD:
         cls, current_user_app_data_id: str, updated_user_app_data: UserAppData
     ) -> UserAppData:
         user_app_data = await cls.get_one_by_id(current_user_app_data_id)
-        return cls.update_one(updated_user_app_data, user_app_data)
+        return cls.update_one(user_app_data, updated_user_app_data)
 
     @classmethod
     def update_one(

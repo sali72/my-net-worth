@@ -6,6 +6,10 @@ from app.api.controllers.wallet_controller import WalletController
 from models.models import Balance, Currency, CurrencyExchange, User, Wallet
 from models.schemas import WalletCreateSchema
 
+@pytest.fixture(scope="module", autouse=True)
+async def cleanup(db):
+    Wallet.objects().delete()
+    yield
 
 @pytest.fixture(scope="function", autouse=True)
 async def cleanup_balances(db):

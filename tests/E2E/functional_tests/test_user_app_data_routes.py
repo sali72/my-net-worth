@@ -66,9 +66,6 @@ class TestChangeBaseCurrencyRoutePositive(TestUserAppDataRoutesSetup):
         self, client, auth_headers, test_user, test_user_app_data
     ):
         """Test changing base currency with existing wallet and asset values"""
-
-        print("1 >>: ", test_user_app_data.assets_value)
-
         # Create new currency (UDD)
         udd_currency = await self._create_test_currency("UDD", "Test Dollar", test_user)
 
@@ -97,21 +94,15 @@ class TestChangeBaseCurrencyRoutePositive(TestUserAppDataRoutesSetup):
 
         # Create asset worth 1000 current base currency
         asset_value = Decimal("1000")
-        created_asset = await self._create_test_asset(test_user, current_base_currency, asset_value)
-
-        current_user_app_data = await self._get_user_app_data_state(test_user.id)
-        print("2 >>: ", current_user_app_data.assets_value)
-        print("2 asset >>: ", created_asset.value)
+        created_asset = await self._create_test_asset(
+            test_user, current_base_currency, asset_value
+        )
 
         # Call API to change base currency
         response = client.post(
             f"/user-app-data/change-base-currency/{str(udd_currency.id)}",
             headers=auth_headers,
         )
-
-        current_user_app_data = await self._get_user_app_data_state(test_user.id)
-        print("3 >>: ", current_user_app_data.assets_value)
-        print("3 asset >>: ", created_asset.value)
 
         assert response.status_code == 200
         response_data = response.json()
@@ -130,6 +121,12 @@ class TestChangeBaseCurrencyRoutePositive(TestUserAppDataRoutesSetup):
         assert Decimal(str(updated_data["net_worth"])) == expected_value
         assert Decimal(str(updated_data["wallets_value"])) == Decimal("2000")
         assert Decimal(str(updated_data["assets_value"])) == Decimal("2000")
+        
+        # put the base currency back to the original
+        response = client.post(
+            f"/user-app-data/change-base-currency/{str(current_base_currency.id)}",
+            headers=auth_headers,
+        )
 
 
 @pytest.mark.asyncio

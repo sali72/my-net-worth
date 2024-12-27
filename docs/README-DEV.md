@@ -89,7 +89,7 @@ my-net-worth-api/
 │   ├── exception_handlers.py           (custom exception handlers)
 │   ├── ...                             (additional shared modules)
 ├── tests/
-│   └── ...                             (test cases will be added)
+│   └── ...                             (test cases)
 ├── .env                                (environment variables)
 ├── requirements.txt                    (project dependencies)
 .
@@ -279,9 +279,59 @@ async def http_exception_handler(request, exc):
 
 - The `to_dict()` methods in models enable serialization for API responses, converting `ObjectId` fields to strings and including related data as needed.
 
+
 ## Testing
 
-Will be added in future.
+The `My Net Worth App API` includes a comprehensive suite of tests to ensure the functionality and reliability of the application. These tests are written using `pytest`. Now the main focus of tests are E2E test of routes. There can be different kind of tests written but for now I have written positive tests that checks intended usage of routes, some validation and negative tests are also included.
+
+### Setting Up for Testing
+
+1. **Install Required Packages:**
+   Ensure you have all the necessary packages installed. You can do this by running:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Configure Test Database:**
+   The tests use a separate test database to avoid affecting production data. Ensure your test database is configured correctly in `database/database.py`.
+
+3. **Environment Variables:**
+   Make sure your `.env` file is set up correctly with any necessary environment variables for testing.
+
+### Running Tests
+
+1. **Run All Tests:**
+   To run all tests in the project, navigate to the root directory of your project and execute:
+   ```bash
+   pytest
+   ```
+
+2. **Run Specific Tests:**
+   You can run tests in a specific file or directory by specifying the path. For example, to run tests for wallet routes:
+   ```bash
+   pytest tests/E2E/functional_tests/test_wallet_routes.py
+   ```
+
+3. **Verbose Output:**
+   For more detailed output, use the `-v` flag:
+   ```bash
+   pytest -v
+   ```
+
+
+### Test Structure
+
+- **Fixtures:**
+  The tests use `pytest` fixtures for setup and teardown operations. These are defined in `tests/E2E/functional_tests/conftest.py` and include fixtures for database connections, test clients, and test data setup.
+
+- **Async Tests:**
+  The tests are marked with `@pytest.mark.asyncio` to support asynchronous operations, which is essential for testing async FastAPI endpoints.
+
+- **Test Organization:**
+  Tests are organized by functionality, with separate files for different API routes and features. For example:
+  - `test_wallet_routes.py` for wallet-related tests
+  - `test_category_routes.py` for category-related tests
+
 
 ## Contributing
 

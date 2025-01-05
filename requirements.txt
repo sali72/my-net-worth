@@ -13,3 +13,4 @@ uvicorn
 pytest
 pytest-mock
 pytest-asyncio
+locust

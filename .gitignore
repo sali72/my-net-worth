@@ -162,3 +162,7 @@ cython_debug/
 #.idea/
 
 settings.json
+*.key
+*.pem
+password.conf
+ssl/*.conf

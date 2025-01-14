@@ -10,8 +10,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./:/app
-    ports:
-      - 7500:5000
     depends_on:
       - mongodb
     networks:
@@ -21,6 +19,9 @@ services:
       options:
         max-size: "100m"
         max-file: "4"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
   mongodb:
     container_name: mongodb
@@ -36,6 +37,26 @@ services:
         max-file: "4"
     env_file:
       - .env
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl/certs:/etc/nginx/ssl/certs:ro
+      - ./nginx/ssl/private:/etc/nginx/ssl/private:ro
+    depends_on:
+      - app
+    networks:
+      - net-worth-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "4"
 
 volumes:
   mongo-data:

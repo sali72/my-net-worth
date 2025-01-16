@@ -1,16 +1,12 @@
-fastapi
-mongoengine
-passlib
-pydantic
-pydantic[email]
-PyJWT
-pymongo
-python-dotenv
-python-multipart
-zxcvbn
-blinker
-uvicorn
-pytest
-pytest-mock
-pytest-asyncio
-locust
+fastapi         # Web framework
+mongoengine     # MongoDB ODM
+passlib         # Password hashing
+pydantic        # Data validation
+pydantic[email] # Email validation
+PyJWT           # JWT handling
+pymongo         # MongoDB driver
+python-dotenv   # Environment variables
+python-multipart # Form data handling
+zxcvbn          # Password strength checking
+blinker         # Signal dispatching
+uvicorn         # ASGI server

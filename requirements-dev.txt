@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest          # Testing framework
+pytest-mock     # Mocking for tests
+pytest-asyncio  # Async testing support
+locust          # Load testing
+bandit          # Security linter

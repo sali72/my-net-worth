@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from mongoengine import DoesNotExist
@@ -25,7 +25,7 @@ class TestCurrencyRoutesSetup:
 
     def _get_test_currency_data(self, **overrides) -> dict:
         """Get test currency data with optional overrides"""
-        timestamp = datetime.utcnow().strftime("%S")
+        timestamp = datetime.now(timezone.utc).strftime("%S")
         currency_data = {
             "code": f"TST",
             "name": f"Test Currency {timestamp}",
@@ -172,7 +172,7 @@ class TestUpdateCurrencyRoutePositive(TestCurrencyRoutesSetup):
     ):
         """Test updating multiple currency fields at once."""
         currency_dict = await self._create_test_currency(test_user)
-        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
         update_data = {
             "name": f"New Currency Name {timestamp}",
             "symbol": "££!",

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from mongoengine import DoesNotExist, Q, QuerySet
@@ -80,4 +80,4 @@ class AssetCRUD:
 
     @staticmethod
     def _update_timestamp(asset: Asset) -> None:
-        asset.updated_at = datetime.utcnow()
+        asset.updated_at = datetime.now(timezone.utc)

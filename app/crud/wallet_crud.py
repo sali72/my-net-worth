@@ -1,5 +1,4 @@
-from datetime import datetime
-from decimal import Decimal
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import HTTPException, status
@@ -82,7 +81,7 @@ class WalletCRUD:
 
     @staticmethod
     def __update_timestamp(wallet: Wallet) -> None:
-        wallet.updated_at = datetime.utcnow()
+        wallet.updated_at = datetime.now(timezone.utc)
 
     @classmethod
     async def delete_one_by_user(cls, user_id: str, wallet_id: str) -> bool:

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from bson import ObjectId
@@ -114,4 +114,4 @@ class UserAppDataCRUD:
 
     @staticmethod
     def __update_timestamp(user_app_data: UserAppData) -> None:
-        user_app_data.updated_at = datetime.utcnow()
+        user_app_data.updated_at = datetime.now(timezone.utc)

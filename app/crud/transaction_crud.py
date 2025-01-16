@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from mongoengine import DoesNotExist, QuerySet
@@ -101,4 +101,4 @@ class TransactionCRUD:
 
     @staticmethod
     def _update_timestamp(transaction: Transaction) -> None:
-        transaction.updated_at = datetime.utcnow()
+        transaction.updated_at = datetime.now(timezone.utc)

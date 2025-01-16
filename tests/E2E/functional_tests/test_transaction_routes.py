@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Optional
 import asyncio
@@ -70,7 +70,7 @@ class TestTransactionRoutesSetup:
         transaction_data = {
             "amount": Decimal("100.00"),
             "type": T.INCOME.value,
-            "date": datetime.utcnow(),
+            "date": datetime.now(timezone.utc),
             "description": "Test transaction",
             "to_wallet_id": wallet["_id"],
             "category_id": category["_id"],
@@ -103,7 +103,7 @@ class TestTransactionRoutesSetup:
         transaction_data = {
             "amount": "100.00",
             "type": T.EXPENSE.value,
-            "date": datetime.utcnow().isoformat(),
+            "date": datetime.now(timezone.utc).isoformat(),
             "description": "Test transaction",
             "from_wallet_id": str(test_wallet["_id"]),
             "category_id": str(test_category["_id"]),
@@ -125,7 +125,7 @@ class TestTransactionRoutesSetup:
     ) -> dict:
         """Helper method to create a test wallet with a unique name"""
         # Generate a unique timestamp-based suffix if none provided
-        suffix = name_suffix or f"_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+        suffix = name_suffix or f"_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
 
         balance_schema = BalanceSchema(
             currency_id=str(user_app_data.base_currency_id.id), amount="1000.00"
@@ -142,7 +142,7 @@ class TestTransactionRoutesSetup:
     ) -> dict:
         """Helper method to create a test category with a unique name"""
         # Generate a unique timestamp-based suffix if none provided
-        suffix = name_suffix or f"_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+        suffix = name_suffix or f"_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
 
         category_schema = CategoryCreateSchema(
             name=f"Test Category{suffix}",
@@ -530,7 +530,7 @@ class TestUpdateTransactionRoutePositive(TestTransactionRoutesSetup):
     async def test_update_transaction_date(self, client, auth_headers, test_user):
         """Test updating transaction date."""
         transaction = await self._create_test_transaction_and_wallet(test_user)
-        new_date = datetime.utcnow() + timedelta(days=1)
+        new_date = datetime.now(timezone.utc) + timedelta(days=1)
         update_data = {"date": new_date.isoformat()}
 
         response = client.put(
@@ -569,7 +569,7 @@ class TestUpdateTransactionRoutePositive(TestTransactionRoutesSetup):
         update_data = {
             "amount": "300.00",
             "description": "Updated description",
-            "date": datetime.utcnow().isoformat(),
+            "date": datetime.now(timezone.utc).isoformat(),
         }
 
         response = client.put(

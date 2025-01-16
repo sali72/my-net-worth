@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
@@ -60,7 +60,7 @@ class TestCurrencyExchangeRoutesSetup:
             "from_currency_id": usd.id,
             "to_currency_id": eur.id,
             "rate": Decimal("0.85"),
-            "date": datetime.utcnow(),
+            "date": datetime.now(timezone.utc),
         }
         exchange_data.update(overrides)
         exchange = CurrencyExchange(**exchange_data).save()
@@ -75,7 +75,7 @@ class TestCurrencyExchangeRoutesSetup:
             "from_currency_id": str(usd.id),
             "to_currency_id": str(eur.id),
             "rate": 0.85,
-            "date": datetime.utcnow().isoformat(),
+            "date": datetime.now(timezone.utc).isoformat(),
         }
         exchange_data.update(overrides)
         return exchange_data

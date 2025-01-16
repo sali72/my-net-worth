@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
@@ -65,7 +65,7 @@ class TestWalletRoutesSetup:
             "from_currency_id": base_currency.id,
             "to_currency_id": new_currency.id,
             "rate": Decimal("2.0"),
-            "date": datetime.utcnow(),
+            "date": datetime.now(timezone.utc),
         }
         CurrencyExchange(**exchange_data).save()
 

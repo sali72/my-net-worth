@@ -60,6 +60,7 @@ class AuthController:
     ) -> User:
         updated_fields = update_data
         if "password" in updated_fields:
+            await cls.__check_password_strength(updated_fields["password"], current_user.username)
             updated_fields["hashed_password"] = cls.pwd_context.hash(
                 updated_fields.pop("password")
             )

@@ -2,6 +2,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
+from uuid import uuid4
 
 import jwt
 from dotenv import load_dotenv
@@ -23,6 +24,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 MINIMUM_PASSWORD_STRENGTH = int(os.getenv("MINIMUM_PASSWORD_STRENGTH"))
+APP_NAME = os.getenv("APP_NAME") or "FastAPI"
 
 
 class AuthController:
@@ -86,8 +88,18 @@ class AuthController:
         cls, data: Dict[str, str], expires_delta: Optional[timedelta] = None
     ) -> str:
         to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
-        to_encode.update({"exp": expire})
+        now = datetime.now(timezone.utc)
+        expire = now + (expires_delta or timedelta(minutes=15))
+
+        to_encode.update(
+            {
+                "jti": str(uuid4()),  # Unique token ID
+                "iat": now,  # Issued at
+                "exp": expire,  # Expiry time
+                "type": "access",  # Token type
+                "iss": APP_NAME,  # Issuer
+            }
+        )
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 

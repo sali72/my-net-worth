@@ -1,4 +1,3 @@
-
 # My Net Worth App API
 
 My Net Worth is a personal financial manager and planner application designed to help users keep track of their assets and currencies, calculate their net worth, and manage their financial transactions. The application supports various asset types and currencies, including fiat and cryptocurrencies, allowing users to have a comprehensive view of their financial status.
@@ -6,7 +5,7 @@ My Net Worth is a personal financial manager and planner application designed to
 The app is currently live for demo on this link:
 [https://my-net-worth.onrender.com/docs](https://my-net-worth.onrender.com/docs)
 
-❗Your first request will be slow, because app spins down with inactivity (It's about deploying on render)
+❗Your first request will be slow because the app spins down with inactivity (It's about deploying on render)
 
 ## Table of Contents
 
@@ -14,16 +13,13 @@ The app is currently live for demo on this link:
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Configuration](#configuration)
-- [Running the Application](#running-the-application)
+- [Security Features](#security-features)
 - [API Documentation](#api-documentation)
 - [Usage Examples](#usage-examples)
 - [Authentication](#authentication)
 - [Error Handling](#error-handling)
 - [License](#license)
 - [Contact Information](#contact-information)
-
-<br>
-
 - [*More Details*](#navigation-panel)
 
 ## Features
@@ -35,153 +31,88 @@ The app is currently live for demo on this link:
 - **Wallet Management**: Create and manage multiple wallets with different currencies.
 - **Transaction History**: Record, view, and manage your financial transactions.
 - **User Authentication**: Secure user registration and authentication system.
+- **Enhanced Security**: 
+  - Nginx reverse proxy
+  - HTTPS encryption
+  - Rate limiting protection
+  - CORS security
+  - Request size limitations
 
 ## Prerequisites
 
 Before you begin, ensure you have met the following requirements:
 
-- **Python 3.8+**: Ensure Python is installed on your system.
-- **MongoDB Database**: The application uses MongoDB for data storage.
-- **Git**: Version control system to clone the repository.
-- **Virtual Environment Tool**: (`venv` or `virtualenv`) Recommended for dependency management.
-
-Certainly! Below is the revised documentation section that includes both the Docker Compose setup and the instructions for deploying without Docker Compose, while retaining the configuration details:
-
+- **Docker**: Docker Engine installed on your system
+- **Docker Compose**: Docker Compose V2 installed
+- **Git**: Version control system to clone the repository
+- **SSL Certificates**: Valid SSL certificates for HTTPS (required for production)
 
 ## Installation
 
-You can either try the app with or without docker compose but first clone the repository:
+1. **Clone the Repository**
 
-**Clone the Repository**
+```bash
+git clone https://github.com/sali72/my-net-worth
+cd my-net-worth
+```
 
-   ```bash
-   git clone https://github.com/yourusername/my-net-worth-api.git
-   cd my-net-worth-api
-   ```
+2. **Deploy with Docker Compose**
 
-- **With Docker Compose**
+```bash
+docker-compose up --build
+```
 
-   If you prefer using Docker Compose, ensure you have Docker installed on your machine. Then, run the following command to build and start the services:
-
-   ```bash
-   docker-compose up --build
-   ```
-
-   This will start the application and a MongoDB service as defined in the `docker-compose.yml` file.
-
-- **Without Docker Compose**
-
-   - **Create and Activate a Virtual Environment**
-
-     - **On Windows:**
-
-       ```bash
-       python -m venv venv
-       venv\Scripts\activate
-       ```
-
-     - **On Unix or MacOS:**
-
-       ```bash
-       python3 -m venv venv
-       source venv/bin/activate
-       ```
-
-   - **Install Dependencies**
-
-     ```bash
-     pip install -r requirements.txt
-     ```
-
-     *Note*: Ensure that `requirements.txt` is in the project root.
+This command will:
+- Build the application container
+- Start the MongoDB service
+- Configure the network between containers
+- Start the application with Nginx reverse proxy
 
 ## Configuration
 
 1. **Environment Variables**
 
-   Create a `.env` file in the project root directory and add the following configurations:
+Create a `.env` file in the project root directory:
 
-    ```env
-    # DB config
-    DB_MODE=local
-    MONGO_DATABASE=my_net_worth_db
-    MONGO_ROOT_USERNAME=your_db_username
-    MONGO_ROOT_PASSWORD=your_db_password
-    MONGO_HOST=mongodb
-    MONGO_LOCAL_HOST=mongodb://localhost:27017
-    MONGO_ATLAS_CONNECTION_STRING=your_mongo_atlas_connection_string
+```env
+# DB config
+DB_MODE=container
+MONGO_DATABASE=my_net_worth_db
+MONGO_ROOT_USERNAME=your_db_username
+MONGO_ROOT_PASSWORD=your_db_password
+MONGO_HOST=mongodb
 
-    # App config
-    ACCESS_TOKEN_EXPIRE_MINUTES=30
-    SECRET_KEY=your_secret_key
-    ALGORITHM=HS256
-    MINIMUM_PASSWORD_STRENGTH=3
-    ```
-
-   Replace `your_secret_key`, `your_db_username`, and `your_db_password` with your actual credentials. If you want to use MongoDB Atlas, set `TEST_MODE=atlas` and provide the `MONGO_ATLAS_CONNECTION_STRING`.
-
-
-## Database Setup
-
-The application supports connecting to MongoDB in three different modes: locally, within a Docker container, or using MongoDB Atlas. You can configure the mode by setting the `DB_MODE` environment variable in your `.env` file.
-
-1. **Local MongoDB**
-
-   To use a local MongoDB instance, set `DB_MODE=local` in your `.env` file. Ensure MongoDB is installed and running on your machine. The application will connect using the following environment variables:
-
-   ```env
-   DB_MODE=local
-   MONGO_DATABASE=my_net_worth_db
-   MONGO_LOCAL_HOST=mongodb://localhost:27017
-   ```
-
-2. **MongoDB in Docker Container**
-
-   If you prefer to use MongoDB within a Docker container, set `DB_MODE=container`. This mode is typically used when deploying the application with Docker Compose. The connection will use the following environment variables:
-
-   ```env
-   DB_MODE=container
-   MONGO_DATABASE=my_net_worth_db
-   MONGO_HOST=mongodb
-   ```
-
-   You can optionally add `MONGO_ROOT_USERNAME` and `MONGO_ROOT_PASSWORD` if authentication is required, but ensure the user is created in MongoDB.
-
-3. **MongoDB Atlas**
-
-   To connect to MongoDB Atlas, set `DB_MODE=atlas` and provide your MongoDB Atlas connection string. Ensure your MongoDB Atlas cluster is configured to allow connections from your network. Use the following environment variables:
-
-   ```env
-   DB_MODE=atlas
-   MONGO_ATLAS_CONNECTION_STRING=your_mongo_atlas_connection_string
-   ```
-
-   Replace `your_mongo_atlas_connection_string` with the actual connection string provided by MongoDB Atlas.
-
-By configuring the `DB_MODE` and the corresponding environment variables, you can easily switch between different MongoDB setups based on your deployment needs.
-
-
-## Running the Application
-
-Start the FastAPI application using Uvicorn:
-
-```bash
-uvicorn app.main:app --reload
+# App config
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+SECRET_KEY=your_secret_key
+ALGORITHM=HS256
+MINIMUM_PASSWORD_STRENGTH=3
 ```
 
-The `--reload` flag enables auto-reloading on code changes, which is useful during development.
+2. **SSL Configuration**
+
+Place your SSL certificates in:
+- `/etc/nginx/ssl/certs/fullchain.pem`
+- `/etc/nginx/ssl/private/privkey.pem`
+
+## Security Features
+The application implements several security measures using Nginx:
+
+- **SSL/TLS**: Ensures encrypted data transmission
+- **Rate Limiting**: Protects against brute force attacks and DoS attempts
+- **CORS Protection**: Controls which domains can access the API
+- **Request Limitations**: Prevents oversized payload attacks
+- **Proxy Protection**: Maintains request integrity behind reverse proxy
 
 ## API Documentation
 
-Once the application is running, access the interactive API documentation provided by Swagger UI at:
+Once the application is running, access the interactive API documentation at:
 
-- **URL**: `http://localhost:8000/docs`
+- **URL**: `https://localhost/docs`
 
-This interface allows you to explore and test the API endpoints directly from your browser.
-*Note*: Ensure that the port is the one you are running uvicorn on it.
+Note: All API endpoints are served over HTTPS only.
 
 ## Usage Examples
-There are usage examples available in the wiki of github repo.
 
 ### Register a New User
 
@@ -236,18 +167,15 @@ Content-Type: application/json
 
 The API uses JSON Web Tokens (JWT) for authentication.
 
-- **Obtaining a Token**: Use the `/auth/login` endpoint with your credentials to receive an access token.
-- **Using the Token**: Include the token in the `Authorization` header for authenticated endpoints:
-
+- **Obtaining a Token**: Use the `/auth/login` endpoint with your credentials
+- **Using the Token**: Include the token in the `Authorization` header:
   ```http
   Authorization: Bearer your_jwt_token
   ```
 
 ## Error Handling
 
-Errors are returned with appropriate HTTP status codes and a JSON response containing the error details.
-
-**Sample Error Response**:
+Errors are returned with appropriate HTTP status codes and a JSON response:
 
 ```json
 {
@@ -266,7 +194,6 @@ For questions or feedback, please reach out:
 
 - **Email**: [sahashemi072@gmail.com](mailto:sahashemi072@gmail.com)
 - **GitHub**: [sali72](https://github.com/sali72)
-
 
 ---
 

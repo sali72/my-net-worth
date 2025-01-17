@@ -34,15 +34,52 @@ Welcome to the developer guide for the **My Net Worth App API**. This document p
 
 ## Architecture
 
-The application follows a modular architecture using **FastAPI** for building the API endpoints and **MongoDB** as the database. The codebase is organized to promote scalability, maintainability, and adherence to best practices.
+The application uses a three-tier architecture:
 
-### Key Architectural Components
+### 1. Reverse Proxy Layer (Nginx)
+- Handles SSL termination
+- Manages rate limiting
+- Controls CORS
+- Routes requests to application server
+- Provides security features:
+  - Request size limitations
+  - Origin validation
+  - DDoS protection
+  - HTTP/HTTPS redirection
 
-- **API Routes**: Managed by FastAPI routers, segregated by functionality.
-- **Controllers**: Handle business logic and interact with models.
-- **Models**: Represent data structures using MongoEngine.
-- **Database Connection**: Handled centrally to manage connections effectively.
-- **Exception Handling**: Custom exception handlers for consistent error responses.
+### 2. Application Layer (FastAPI)
+- Handles business logic
+- Manages API endpoints
+- Processes requests
+- Communicates with database
+
+### 3. Database Layer (MongoDB)
+- Stores application data
+- Handles data persistence
+- Manages transactions
+
+### Network Flow
+```
+Client -> Nginx (443/80) -> FastAPI (5000) -> MongoDB
+```
+
+## Security Architecture
+
+### Rate Limiting
+- General endpoints protection
+- Enhanced security for authentication endpoints
+- Burst handling for traffic spikes
+
+### SSL/TLS Configuration
+- TLS 1.2/1.3 support
+- Automatic HTTP to HTTPS redirection
+- Certificate management through volume mounts
+
+### CORS Security
+- Origin whitelist validation
+- Pre-flight request handling
+- Controlled header exposure
+
 
 ## Technologies Used
 
@@ -90,8 +127,14 @@ my-net-worth-api/
 │   ├── ...                             (additional shared modules)
 ├── tests/
 │   └── ...                             (test cases)
+├── nginx/
+│   ├── conf.d/                         (Nginx configuration)
+│   └── ssl/
+│       ├── certs/                      (SSL certificates)
+│       └── private/                    (Private keys)
 ├── .env                                (environment variables)
-├── requirements.txt                    (project dependencies)
+├── requirements.txt                    (main project dependencies)
+├── requirements-dev.txt                (project dependencies for development)
 .
 .
 . 
@@ -105,45 +148,6 @@ The database connection is managed centrally in the `database/database.py` modul
 ## Application Entry Point
 
 The entry point of the application is `app/main.py`. It initializes the FastAPI app, includes routers, and sets up exception handlers.
-
-### Lifespan Event
-
-Using the `@asynccontextmanager`, the application manages startup and shutdown events:
-
-```python
-from contextlib import asynccontextmanager
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    connect_to_db()
-    yield
-```
-
-### FastAPI Initialization
-
-```python
-app = FastAPI(
-    title="My Net Worth App API",
-    description="Personal financial manager and planner application",
-    lifespan=lifespan,
-)
-```
-
-### Including Routers
-
-The application includes routers for different endpoints:
-
-```python
-app.include_router(auth_routes)
-app.include_router(user_app_data_routes)
-app.include_router(currency_routes)
-app.include_router(currency_exchange_routes)
-app.include_router(wallet_routes)
-app.include_router(transaction_routes)
-app.include_router(asset_type_routes)
-app.include_router(asset_routes)
-app.include_router(category_routes)
-```
 
 ### Exception Handlers
 
@@ -289,7 +293,7 @@ The `My Net Worth App API` includes a comprehensive suite of tests to ensure the
 1. **Install Required Packages:**
    Ensure you have all the necessary packages installed. You can do this by running:
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
    ```
 
 2. **Configure Test Database:**

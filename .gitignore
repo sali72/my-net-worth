@@ -166,3 +166,4 @@ settings.json
 *.pem
 password.conf
 ssl/*.conf
+/.qodo

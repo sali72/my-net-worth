@@ -6,7 +6,6 @@ import mongoengine
 from dotenv import load_dotenv
 from mongoengine.connection import get_connection
 
-from commons.logging_config import setup_logging
 from database.initialize_db import (
     initialize_common_asset_types,
     initialize_common_categories,
@@ -14,7 +13,7 @@ from database.initialize_db import (
 )
 
 load_dotenv()
-setup_logging()
+
 logger = logging.getLogger(__name__)
 
 

@@ -167,3 +167,5 @@ settings.json
 password.conf
 ssl/*.conf
 /.qodo
+/logs
+*.log*

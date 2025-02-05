@@ -1,8 +1,12 @@
+import logging
+
 from app.crud.asset_type_crud import AssetTypeCRUD
 from app.crud.category_crud import CategoryCRUD
 from app.crud.currency_crud import CurrencyCRUD
 from models.enums import TransactionTypeEnum as T
 from models.models import AssetType, Category, Currency
+
+logger = logging.getLogger(__name__)
 
 
 async def initialize_fiat_and_crypto_currencies():
@@ -81,7 +85,7 @@ async def initialize_fiat_and_crypto_currencies():
             )
             await CurrencyCRUD.create_one(currency)
 
-    print("Currencies initialized")
+    logger.info("Currencies initialized")
 
 
 async def initialize_common_categories():
@@ -107,7 +111,7 @@ async def initialize_common_categories():
             )
             await CategoryCRUD.create_one(category)
 
-    print("Categories initialized")
+    logger.info("Categories initialized")
 
 
 async def initialize_common_asset_types():
@@ -131,4 +135,4 @@ async def initialize_common_asset_types():
             )
             await AssetTypeCRUD.create_one(asset_type)
 
-    print("Asset types initialized")
+    logger.info("Categories initialized")

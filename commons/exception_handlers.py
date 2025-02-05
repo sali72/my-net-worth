@@ -3,9 +3,7 @@ import traceback
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from commons.logging_config import setup_logging
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 

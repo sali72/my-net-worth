@@ -14,6 +14,7 @@ from app.api.endpoints.transaction_routes import router as transaction_routes
 from app.api.endpoints.user_app_data_routes import router as user_app_data_routes
 from app.api.endpoints.wallet_routes import router as wallet_routes
 from commons.exception_handlers import base_exception_handler, http_exception_handler
+from commons.logging_config import setup_logging
 from database.database import connect_to_db
 
 # from models.models import AssetType
@@ -21,6 +22,7 @@ from database.database import connect_to_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    setup_logging()
     await connect_to_db()
     # # Fix indexes of collections if needed
     # AssetType._get_collection().drop_indexes()
